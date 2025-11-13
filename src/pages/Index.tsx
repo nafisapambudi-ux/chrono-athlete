@@ -635,24 +635,6 @@ const Index = () => {
             </div>
           </div>
 
-          {/* RPE mapping info */}
-          <div className="text-xs text-muted-foreground mb-4">
-            <p className="mb-1 font-medium">Load conversion based on duration (60-minute baseline):</p>
-            <div className="grid grid-cols-5 md:grid-cols-10 gap-1 mb-1">
-              {Object.entries(RPE_MAP).map(([k, v]) => (
-                <div key={k} className="px-2 py-1 rounded-xl bg-muted border border-border text-center">
-                  <div className="font-semibold text-xs">{k}</div>
-                  <div>{v.label}</div>
-                  <div className="text-[11px]">{v.multiplier} @60'</div>
-                </div>
-              ))}
-            </div>
-            <p>
-              Formula: <span className="font-semibold">Training Load = multiplier[RPE] × (duration / 60)</span>. Example:
-              RPE 1, 60' → 20; 30' → 10.
-            </p>
-          </div>
-
           {/* Session table – WITHOUT load display */}
           {sessions.length > 0 && (
             <div className="overflow-auto border border-border rounded-xl bg-muted mb-4">
