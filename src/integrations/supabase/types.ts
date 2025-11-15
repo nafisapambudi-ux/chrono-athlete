@@ -14,7 +14,100 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      athletes: {
+        Row: {
+          body_height: number | null
+          created_at: string
+          id: string
+          mass: number | null
+          name: string
+          updated_at: string
+          user_id: string
+          vertical_jump: number | null
+        }
+        Insert: {
+          body_height?: number | null
+          created_at?: string
+          id?: string
+          mass?: number | null
+          name: string
+          updated_at?: string
+          user_id: string
+          vertical_jump?: number | null
+        }
+        Update: {
+          body_height?: number | null
+          created_at?: string
+          id?: string
+          mass?: number | null
+          name?: string
+          updated_at?: string
+          user_id?: string
+          vertical_jump?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "athletes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      training_sessions: {
+        Row: {
+          athlete_id: string
+          created_at: string
+          duration_minutes: number
+          id: string
+          notes: string | null
+          rpe: number
+          session_date: string
+        }
+        Insert: {
+          athlete_id: string
+          created_at?: string
+          duration_minutes: number
+          id?: string
+          notes?: string | null
+          rpe: number
+          session_date: string
+        }
+        Update: {
+          athlete_id?: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          rpe?: number
+          session_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_sessions_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "athletes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
