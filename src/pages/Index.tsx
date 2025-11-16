@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAthletes } from "@/hooks/useAthletes";
 import { useTrainingSessions } from "@/hooks/useTrainingSessions";
@@ -7,14 +7,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, BarChart3, Search, ArrowUpDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { athletes, isLoading: athletesLoading, createAthlete, updateAthlete, deleteAthlete } = useAthletes();
   const { sessions, isLoading: sessionsLoading, createSession, deleteSession } = useTrainingSessions();
   const { toast } = useToast();
+
+  // Filter and sort states
+  const [athleteSearch, setAthleteSearch] = useState("");
+  const [athleteSortBy, setAthleteSortBy] = useState<"name" | "created_at">("created_at");
+  const [sessionSortBy, setSessionSortBy] = useState<"date" | "rpe" | "duration">("date");
+  const [sessionFilterRPE, setSessionFilterRPE] = useState<string>("all");
 
   const [selectedAthleteId, setSelectedAthleteId] = useState<string | null>(null);
   const [athleteForm, setAthleteForm] = useState({
@@ -62,17 +71,58 @@ const Index = () => {
     setSessionForm({ sessionDate: "", durationMinutes: "", rpe: "", notes: "" });
   };
 
+  // Filtered and sorted athletes
+  const filteredAthletes = useMemo(() => {
+    let filtered = athletes.filter(athlete =>
+      athlete.name.toLowerCase().includes(athleteSearch.toLowerCase())
+    );
+
+    return filtered.sort((a, b) => {
+      if (athleteSortBy === "name") {
+        return a.name.localeCompare(b.name);
+      }
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  }, [athletes, athleteSearch, athleteSortBy]);
+
+  // Filtered and sorted sessions
+  const athleteSessions = useMemo(() => {
+    let filtered = sessions.filter((s) => s.athlete_id === selectedAthleteId);
+
+    if (sessionFilterRPE !== "all") {
+      const rpeRange = sessionFilterRPE.split("-");
+      const minRPE = parseInt(rpeRange[0]);
+      const maxRPE = parseInt(rpeRange[1]);
+      filtered = filtered.filter(s => s.rpe >= minRPE && s.rpe <= maxRPE);
+    }
+
+    return filtered.sort((a, b) => {
+      if (sessionSortBy === "date") {
+        return new Date(b.session_date).getTime() - new Date(a.session_date).getTime();
+      } else if (sessionSortBy === "rpe") {
+        return b.rpe - a.rpe;
+      } else {
+        return b.duration_minutes - a.duration_minutes;
+      }
+    });
+  }, [sessions, selectedAthleteId, sessionFilterRPE, sessionSortBy]);
+
   const selectedAthlete = athletes.find((a) => a.id === selectedAthleteId);
-  const athleteSessions = sessions.filter((s) => s.athlete_id === selectedAthleteId);
 
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-7xl mx-auto">
         <header className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold text-foreground">HIRO Training App</h1>
-          <Button onClick={signOut} variant="outline">
-            Sign Out
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate("/dashboard")} variant="outline">
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Dashboard
+            </Button>
+            <Button onClick={signOut} variant="outline">
+              Sign Out
+            </Button>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -82,6 +132,30 @@ const Index = () => {
               <CardTitle>Athletes</CardTitle>
             </CardHeader>
             <CardContent>
+              {/* Filters */}
+              <div className="mb-4 space-y-3">
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search athletes..."
+                    value={athleteSearch}
+                    onChange={(e) => setAthleteSearch(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                  <Select value={athleteSortBy} onValueChange={(v: any) => setAthleteSortBy(v)}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="created_at">Newest First</SelectItem>
+                      <SelectItem value="name">Name (A-Z)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
               <form onSubmit={handleAddAthlete} className="space-y-4 mb-6">
                 <div>
                   <Label htmlFor="name">Name</Label>
@@ -132,10 +206,12 @@ const Index = () => {
                   <div className="flex justify-center p-4">
                     <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
-                ) : athletes.length === 0 ? (
-                  <p className="text-muted-foreground text-center p-4">No athletes yet</p>
+                ) : filteredAthletes.length === 0 ? (
+                  <p className="text-muted-foreground text-center p-4">
+                    {athleteSearch ? "No athletes found" : "No athletes yet"}
+                  </p>
                 ) : (
-                  athletes.map((athlete) => (
+                  filteredAthletes.map((athlete) => (
                     <div
                       key={athlete.id}
                       className={`p-4 border rounded-lg cursor-pointer transition-colors ${
@@ -183,6 +259,37 @@ const Index = () => {
             <CardContent>
               {selectedAthleteId ? (
                 <>
+                  {/* Filters */}
+                  <div className="mb-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                      <Select value={sessionSortBy} onValueChange={(v: any) => setSessionSortBy(v)}>
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="date">Newest First</SelectItem>
+                          <SelectItem value="rpe">Highest RPE</SelectItem>
+                          <SelectItem value="duration">Longest Duration</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm">Filter RPE:</Label>
+                      <Select value={sessionFilterRPE} onValueChange={setSessionFilterRPE}>
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All RPE</SelectItem>
+                          <SelectItem value="1-3">Low (1-3)</SelectItem>
+                          <SelectItem value="4-6">Medium (4-6)</SelectItem>
+                          <SelectItem value="7-10">High (7-10)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
                   <form onSubmit={handleAddSession} className="space-y-4 mb-6">
                     <div>
                       <Label htmlFor="date">Session Date</Label>
