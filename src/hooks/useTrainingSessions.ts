@@ -26,17 +26,19 @@ export function useTrainingSessions(athleteId?: string) {
   const { data: sessions = [], isLoading } = useQuery({
     queryKey: ["training_sessions", athleteId],
     queryFn: async () => {
-      if (!athleteId) return [];
-      const { data, error } = await supabase
+      let query = supabase
         .from("training_sessions")
         .select("*")
-        .eq("athlete_id", athleteId)
-        .order("session_date", { ascending: true });
+        .order("session_date", { ascending: false });
+      
+      if (athleteId) {
+        query = query.eq("athlete_id", athleteId);
+      }
 
+      const { data, error } = await query;
       if (error) throw error;
       return data as TrainingSession[];
     },
-    enabled: !!athleteId,
   });
 
   const createSession = useMutation({
