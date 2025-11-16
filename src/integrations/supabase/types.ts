@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      athlete_readiness: {
+        Row: {
+          athlete_id: string
+          created_at: string
+          id: string
+          power: number | null
+          readiness_date: string
+          readiness_score: number | null
+          resting_heart_rate: number
+          vertical_jump: number
+          vo2max: number | null
+        }
+        Insert: {
+          athlete_id: string
+          created_at?: string
+          id?: string
+          power?: number | null
+          readiness_date: string
+          readiness_score?: number | null
+          resting_heart_rate: number
+          vertical_jump: number
+          vo2max?: number | null
+        }
+        Update: {
+          athlete_id?: string
+          created_at?: string
+          id?: string
+          power?: number | null
+          readiness_date?: string
+          readiness_score?: number | null
+          resting_heart_rate?: number
+          vertical_jump?: number
+          vo2max?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_athlete"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "athletes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       athletes: {
         Row: {
           body_height: number | null

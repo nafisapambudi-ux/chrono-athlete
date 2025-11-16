@@ -2,20 +2,42 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAthletes } from "@/hooks/useAthletes";
 import { useTrainingSessions } from "@/hooks/useTrainingSessions";
+import { useAthleteReadiness } from "@/hooks/useAthleteReadiness";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { ArrowLeft, TrendingUp, Calendar, Clock, Activity } from "lucide-react";
+import { ArrowLeft, TrendingUp, Calendar, Clock, Activity, Heart, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, subDays } from "date-fns";
+import { toast } from "sonner";
+
+// RPE Load multipliers per 60 minutes
+const RPE_LOAD_MAP: { [key: number]: number } = {
+  1: 20, 2: 30, 3: 40, 4: 50, 5: 60,
+  6: 70, 7: 80, 8: 100, 9: 120, 10: 140
+};
+
+// Calculate training load based on RPE and duration
+function calculateTrainingLoad(rpe: number, durationMinutes: number): number {
+  const loadPer60Min = RPE_LOAD_MAP[rpe] || 0;
+  return (loadPer60Min * durationMinutes) / 60;
+}
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { athletes } = useAthletes();
   const { sessions } = useTrainingSessions();
+  const { readinessData, createReadiness } = useAthleteReadiness();
   const [selectedAthleteId, setSelectedAthleteId] = useState<string>("all");
+  const [readinessForm, setReadinessForm] = useState({
+    readinessDate: format(new Date(), "yyyy-MM-dd"),
+    restingHeartRate: "",
+    verticalJump: "",
+  });
 
   if (!user) {
     window.location.href = "/auth";
@@ -26,6 +48,51 @@ const Dashboard = () => {
     ? sessions 
     : sessions.filter(s => s.athlete_id === selectedAthleteId);
 
+  const filteredReadiness = selectedAthleteId === "all"
+    ? readinessData
+    : readinessData.filter(r => r.athlete_id === selectedAthleteId);
+
+  // Calculate fitness, fatigue, and form
+  const calculateFitnessFatigue = () => {
+    const today = new Date();
+    const last42Days = subDays(today, 42);
+    const last7Days = subDays(today, 7);
+
+    const recentSessions = filteredSessions.filter(
+      s => new Date(s.session_date) >= last42Days
+    );
+
+    // Fitness (CTL - Chronic Training Load): 42-day exponential weighted average
+    const fitness = recentSessions.reduce((sum, session) => {
+      const load = calculateTrainingLoad(session.rpe, session.duration_minutes);
+      const daysAgo = Math.floor(
+        (today.getTime() - new Date(session.session_date).getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const weight = Math.exp(-daysAgo / 42);
+      return sum + load * weight;
+    }, 0);
+
+    // Fatigue (ATL - Acute Training Load): 7-day exponential weighted average
+    const fatigueSessions = recentSessions.filter(
+      s => new Date(s.session_date) >= last7Days
+    );
+    const fatigue = fatigueSessions.reduce((sum, session) => {
+      const load = calculateTrainingLoad(session.rpe, session.duration_minutes);
+      const daysAgo = Math.floor(
+        (today.getTime() - new Date(session.session_date).getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const weight = Math.exp(-daysAgo / 7);
+      return sum + load * weight;
+    }, 0);
+
+    // Form (TSB - Training Stress Balance): Fitness - Fatigue
+    const form = fitness - fatigue;
+
+    return { fitness, fatigue, form };
+  };
+
+  const { fitness, fatigue, form } = calculateFitnessFatigue();
+
   // RPE Trend Data
   const rpeData = filteredSessions
     .sort((a, b) => new Date(a.session_date).getTime() - new Date(b.session_date).getTime())
@@ -35,12 +102,43 @@ const Dashboard = () => {
       duration: session.duration_minutes,
     }));
 
-  // Training Load (RPE × Duration)
+  // Training Load with new calculation
   const trainingLoadData = filteredSessions
     .sort((a, b) => new Date(a.session_date).getTime() - new Date(b.session_date).getTime())
     .map(session => ({
       date: format(parseISO(session.session_date), "MMM dd"),
-      load: session.rpe * session.duration_minutes,
+      load: calculateTrainingLoad(session.rpe, session.duration_minutes),
+    }));
+
+  // Fitness/Fatigue/Form trend
+  const fitnessTrendData = filteredSessions
+    .sort((a, b) => new Date(a.session_date).getTime() - new Date(b.session_date).getTime())
+    .slice(-14)
+    .map((_, index, arr) => {
+      const sessionsUpToDate = filteredSessions.slice(0, filteredSessions.indexOf(arr[index]) + 1);
+      const date = arr[index].session_date;
+      
+      const fitnessCTL = sessionsUpToDate.slice(-42).reduce((sum, s) => 
+        sum + calculateTrainingLoad(s.rpe, s.duration_minutes), 0) / 42;
+      const fatigueATL = sessionsUpToDate.slice(-7).reduce((sum, s) => 
+        sum + calculateTrainingLoad(s.rpe, s.duration_minutes), 0) / 7;
+      
+      return {
+        date: format(parseISO(date), "MMM dd"),
+        fitness: parseFloat(fitnessCTL.toFixed(1)),
+        fatigue: parseFloat(fatigueATL.toFixed(1)),
+        form: parseFloat((fitnessCTL - fatigueATL).toFixed(1)),
+      };
+    });
+
+  // Readiness trend data
+  const readinessTrendData = filteredReadiness
+    .sort((a, b) => new Date(a.readiness_date).getTime() - new Date(b.readiness_date).getTime())
+    .map(r => ({
+      date: format(parseISO(r.readiness_date), "MMM dd"),
+      readiness: r.readiness_score || 0,
+      vo2max: r.vo2max || 0,
+      power: r.power || 0,
     }));
 
   // Sessions per Athlete
@@ -58,6 +156,34 @@ const Dashboard = () => {
   const avgDuration = filteredSessions.length > 0
     ? Math.round(totalDuration / filteredSessions.length)
     : 0;
+
+  const latestReadiness = filteredReadiness[0];
+
+  const handleAddReadiness = () => {
+    if (!readinessForm.restingHeartRate || !readinessForm.verticalJump) {
+      toast.error("Mohon isi semua data kesiapan");
+      return;
+    }
+
+    const athleteId = selectedAthleteId === "all" ? athletes[0]?.id : selectedAthleteId;
+    if (!athleteId) {
+      toast.error("Pilih atlet terlebih dahulu");
+      return;
+    }
+
+    createReadiness({
+      athlete_id: athleteId,
+      readiness_date: readinessForm.readinessDate,
+      resting_heart_rate: parseInt(readinessForm.restingHeartRate),
+      vertical_jump: parseFloat(readinessForm.verticalJump),
+    });
+
+    setReadinessForm({
+      readinessDate: format(new Date(), "yyyy-MM-dd"),
+      restingHeartRate: "",
+      verticalJump: "",
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -96,8 +222,59 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Athlete Readiness Input */}
+        {selectedAthleteId !== "all" && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Heart className="h-5 w-5" />
+                Input Data Kesiapan Atlet
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <Label htmlFor="readiness-date">Tanggal</Label>
+                  <Input
+                    id="readiness-date"
+                    type="date"
+                    value={readinessForm.readinessDate}
+                    onChange={(e) => setReadinessForm({ ...readinessForm, readinessDate: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="rhr">Resting Heart Rate (bpm)</Label>
+                  <Input
+                    id="rhr"
+                    type="number"
+                    placeholder="60"
+                    value={readinessForm.restingHeartRate}
+                    onChange={(e) => setReadinessForm({ ...readinessForm, restingHeartRate: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="vj">Vertical Jump (cm)</Label>
+                  <Input
+                    id="vj"
+                    type="number"
+                    step="0.1"
+                    placeholder="50"
+                    value={readinessForm.verticalJump}
+                    onChange={(e) => setReadinessForm({ ...readinessForm, verticalJump: e.target.value })}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button onClick={handleAddReadiness} className="w-full">
+                    Tambah Data
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
@@ -131,15 +308,129 @@ const Dashboard = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Avg Duration</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
+              <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{avgDuration} min</div>
             </CardContent>
           </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Fitness (CTL)</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{fitness.toFixed(1)}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Fatigue (ATL)</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{fatigue.toFixed(1)}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Form (TSB)</CardTitle>
+              <Zap className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold" style={{ color: form > 0 ? 'green' : 'red' }}>
+                {form.toFixed(1)}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
+        {/* Readiness Stats */}
+        {selectedAthleteId !== "all" && latestReadiness && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Readiness Score</CardTitle>
+                <Heart className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{latestReadiness.readiness_score?.toFixed(1) || 0}</div>
+                <p className="text-xs text-muted-foreground">VJ: 60% | RHR: 40%</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">VO2max</CardTitle>
+                <Activity className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{latestReadiness.vo2max?.toFixed(1) || 0}</div>
+                <p className="text-xs text-muted-foreground">ml/kg/min</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Power</CardTitle>
+                <Zap className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{latestReadiness.power?.toFixed(1) || 0}</div>
+                <p className="text-xs text-muted-foreground">watts</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Charts */}
+        <div className="grid grid-cols-1 gap-6 mb-6">
+          {/* Fitness/Fatigue/Form */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Fitness, Fatigue & Form Trend</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={fitnessTrendData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="fitness" stroke="#10b981" name="Fitness (CTL)" />
+                  <Line type="monotone" dataKey="fatigue" stroke="#ef4444" name="Fatigue (ATL)" />
+                  <Line type="monotone" dataKey="form" stroke="#3b82f6" name="Form (TSB)" />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+
+        {selectedAthleteId !== "all" && readinessTrendData.length > 0 && (
+          <div className="grid grid-cols-1 gap-6 mb-6">
+            {/* Readiness Trend */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Athlete Readiness Trend</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={readinessTrendData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis yAxisId="left" />
+                    <YAxis yAxisId="right" orientation="right" />
+                    <Tooltip />
+                    <Legend />
+                    <Line yAxisId="left" type="monotone" dataKey="readiness" stroke="#8b5cf6" name="Readiness Score" />
+                    <Line yAxisId="right" type="monotone" dataKey="vo2max" stroke="#06b6d4" name="VO2max" />
+                    <Line yAxisId="right" type="monotone" dataKey="power" stroke="#f59e0b" name="Power" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* RPE Trend */}
           <Card>
