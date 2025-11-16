@@ -39,38 +39,6 @@ const Index = () => {
     notes: "",
   });
 
-  if (!user) {
-    window.location.href = "/auth";
-    return null;
-  }
-
-  const handleAddAthlete = async (e: React.FormEvent) => {
-    e.preventDefault();
-    createAthlete({
-      name: athleteForm.name,
-      body_height: athleteForm.bodyHeight ? Number(athleteForm.bodyHeight) : undefined,
-      mass: athleteForm.mass ? Number(athleteForm.mass) : undefined,
-      vertical_jump: athleteForm.verticalJump ? Number(athleteForm.verticalJump) : undefined,
-    });
-    setAthleteForm({ name: "", bodyHeight: "", mass: "", verticalJump: "" });
-  };
-
-  const handleAddSession = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedAthleteId) {
-      toast({ title: "Please select an athlete", variant: "destructive" });
-      return;
-    }
-    createSession({
-      athlete_id: selectedAthleteId,
-      session_date: sessionForm.sessionDate,
-      duration_minutes: Number(sessionForm.durationMinutes),
-      rpe: Number(sessionForm.rpe),
-      notes: sessionForm.notes || undefined,
-    });
-    setSessionForm({ sessionDate: "", durationMinutes: "", rpe: "", notes: "" });
-  };
-
   // Filtered and sorted athletes
   const filteredAthletes = useMemo(() => {
     let filtered = athletes.filter(athlete =>
@@ -108,6 +76,38 @@ const Index = () => {
   }, [sessions, selectedAthleteId, sessionFilterRPE, sessionSortBy]);
 
   const selectedAthlete = athletes.find((a) => a.id === selectedAthleteId);
+
+  if (!user) {
+    window.location.href = "/auth";
+    return null;
+  }
+
+  const handleAddAthlete = async (e: React.FormEvent) => {
+    e.preventDefault();
+    createAthlete({
+      name: athleteForm.name,
+      body_height: athleteForm.bodyHeight ? Number(athleteForm.bodyHeight) : undefined,
+      mass: athleteForm.mass ? Number(athleteForm.mass) : undefined,
+      vertical_jump: athleteForm.verticalJump ? Number(athleteForm.verticalJump) : undefined,
+    });
+    setAthleteForm({ name: "", bodyHeight: "", mass: "", verticalJump: "" });
+  };
+
+  const handleAddSession = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedAthleteId) {
+      toast({ title: "Please select an athlete", variant: "destructive" });
+      return;
+    }
+    createSession({
+      athlete_id: selectedAthleteId,
+      session_date: sessionForm.sessionDate,
+      duration_minutes: Number(sessionForm.durationMinutes),
+      rpe: Number(sessionForm.rpe),
+      notes: sessionForm.notes || undefined,
+    });
+    setSessionForm({ sessionDate: "", durationMinutes: "", rpe: "", notes: "" });
+  };
 
   return (
     <div className="min-h-screen bg-background p-8">
