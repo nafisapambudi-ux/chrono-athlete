@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { trainingSessionSchema } from "@/lib/validationSchemas";
 
 export interface TrainingSession {
   id: string;
@@ -43,9 +44,18 @@ export function useTrainingSessions(athleteId?: string) {
 
   const createSession = useMutation({
     mutationFn: async (session: TrainingSessionInput) => {
+      // Validate input
+      const validatedData = trainingSessionSchema.parse(session);
+      
       const { data, error } = await supabase
         .from("training_sessions")
-        .insert(session)
+        .insert({
+          athlete_id: validatedData.athlete_id,
+          session_date: validatedData.session_date,
+          duration_minutes: validatedData.duration_minutes,
+          rpe: validatedData.rpe,
+          notes: validatedData.notes,
+        })
         .select()
         .single();
 
@@ -57,7 +67,11 @@ export function useTrainingSessions(athleteId?: string) {
       toast.success("Sesi latihan berhasil ditambahkan");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Gagal menambahkan sesi latihan");
+      if (error.name === "ZodError") {
+        toast.error(error.errors[0]?.message || "Data tidak valid");
+      } else {
+        toast.error("Gagal menambahkan sesi latihan");
+      }
     },
   });
 
@@ -74,7 +88,7 @@ export function useTrainingSessions(athleteId?: string) {
       toast.success("Sesi latihan berhasil dihapus");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Gagal menghapus sesi latihan");
+      toast.error("Gagal menghapus sesi latihan");
     },
   });
 

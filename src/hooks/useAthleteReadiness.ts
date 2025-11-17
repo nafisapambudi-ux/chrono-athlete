@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { athleteReadinessSchema } from "@/lib/validationSchemas";
 
 export interface AthleteReadiness {
   id: string;
@@ -68,17 +69,23 @@ export function useAthleteReadiness(athleteId?: string) {
 
   const createReadiness = useMutation({
     mutationFn: async (readiness: AthleteReadinessInput) => {
-      const vo2max = calculateVO2max(readiness.resting_heart_rate);
-      const power = calculatePower(readiness.vertical_jump);
+      // Validate input
+      const validatedData = athleteReadinessSchema.parse(readiness);
+      
+      const vo2max = calculateVO2max(validatedData.resting_heart_rate);
+      const power = calculatePower(validatedData.vertical_jump);
       const readinessScore = calculateReadinessScore(
-        readiness.vertical_jump,
-        readiness.resting_heart_rate
+        validatedData.vertical_jump,
+        validatedData.resting_heart_rate
       );
 
       const { data, error } = await supabase
         .from("athlete_readiness")
         .insert({
-          ...readiness,
+          athlete_id: validatedData.athlete_id,
+          readiness_date: validatedData.readiness_date,
+          resting_heart_rate: validatedData.resting_heart_rate,
+          vertical_jump: validatedData.vertical_jump,
           vo2max,
           power,
           readiness_score: readinessScore,
@@ -94,7 +101,11 @@ export function useAthleteReadiness(athleteId?: string) {
       toast.success("Data kesiapan berhasil ditambahkan");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Gagal menambahkan data kesiapan");
+      if (error.name === "ZodError") {
+        toast.error(error.errors[0]?.message || "Data tidak valid");
+      } else {
+        toast.error("Gagal menambahkan data kesiapan");
+      }
     },
   });
 
@@ -111,7 +122,7 @@ export function useAthleteReadiness(athleteId?: string) {
       toast.success("Data kesiapan berhasil dihapus");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Gagal menghapus data kesiapan");
+      toast.error("Gagal menghapus data kesiapan");
     },
   });
 
