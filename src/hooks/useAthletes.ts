@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { athleteSchema } from "@/lib/validationSchemas";
 
 export interface Athlete {
   id: string;
@@ -43,10 +44,17 @@ export function useAthletes() {
   const createAthlete = useMutation({
     mutationFn: async (athlete: AthleteInput) => {
       if (!user) throw new Error("User not authenticated");
+      
+      // Validate input
+      const validatedData = athleteSchema.parse(athlete);
+      
       const { data, error } = await supabase
         .from("athletes")
         .insert({
-          ...athlete,
+          name: validatedData.name,
+          mass: validatedData.mass,
+          body_height: validatedData.body_height,
+          vertical_jump: validatedData.vertical_jump,
           user_id: user.id,
         })
         .select()
@@ -60,15 +68,22 @@ export function useAthletes() {
       toast.success("Atlet berhasil ditambahkan");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Gagal menambahkan atlet");
+      if (error.name === "ZodError") {
+        toast.error(error.errors[0]?.message || "Data tidak valid");
+      } else {
+        toast.error("Gagal menambahkan atlet");
+      }
     },
   });
 
   const updateAthlete = useMutation({
     mutationFn: async ({ id, ...athlete }: Partial<Athlete> & { id: string }) => {
+      // Validate input (partial validation for updates)
+      const validatedData = athleteSchema.partial().parse(athlete);
+      
       const { data, error } = await supabase
         .from("athletes")
-        .update(athlete)
+        .update(validatedData)
         .eq("id", id)
         .select()
         .single();
@@ -81,7 +96,11 @@ export function useAthletes() {
       toast.success("Atlet berhasil diperbarui");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Gagal memperbarui atlet");
+      if (error.name === "ZodError") {
+        toast.error(error.errors[0]?.message || "Data tidak valid");
+      } else {
+        toast.error("Gagal memperbarui atlet");
+      }
     },
   });
 
@@ -95,7 +114,7 @@ export function useAthletes() {
       toast.success("Atlet berhasil dihapus");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Gagal menghapus atlet");
+      toast.error("Gagal menghapus atlet");
     },
   });
 

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { authSchema } from "@/lib/validationSchemas";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -19,17 +20,24 @@ export default function Auth() {
     setLoading(true);
 
     try {
+      // Validate input
+      const validatedData = authSchema.parse({ email, password });
+
       if (isLogin) {
-        await signIn(email, password);
+        await signIn(validatedData.email, validatedData.password);
         toast.success("Berhasil masuk!");
       } else {
-        await signUp(email, password);
+        await signUp(validatedData.email, validatedData.password);
         toast.success("Akun berhasil dibuat! Silakan masuk.");
         setIsLogin(true);
       }
       navigate("/");
     } catch (error: any) {
-      toast.error(error.message || "Terjadi kesalahan");
+      if (error.name === "ZodError") {
+        toast.error(error.errors[0]?.message || "Data tidak valid");
+      } else {
+        toast.error("Terjadi kesalahan. Silakan coba lagi");
+      }
     } finally {
       setLoading(false);
     }
