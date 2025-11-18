@@ -31,13 +31,8 @@ const Dashboard = () => {
   const { user, signOut } = useAuth();
   const { athletes } = useAthletes();
   const { sessions } = useTrainingSessions();
-  const { readinessData, createReadiness } = useAthleteReadiness();
+  const { readinessData } = useAthleteReadiness();
   const [selectedAthleteId, setSelectedAthleteId] = useState<string>("all");
-  const [readinessForm, setReadinessForm] = useState({
-    readinessDate: format(new Date(), "yyyy-MM-dd"),
-    restingHeartRate: "",
-    verticalJump: "",
-  });
 
   if (!user) {
     window.location.href = "/auth";
@@ -159,31 +154,6 @@ const Dashboard = () => {
 
   const latestReadiness = filteredReadiness[0];
 
-  const handleAddReadiness = () => {
-    if (!readinessForm.restingHeartRate || !readinessForm.verticalJump) {
-      toast.error("Mohon isi semua data kesiapan");
-      return;
-    }
-
-    const athleteId = selectedAthleteId === "all" ? athletes[0]?.id : selectedAthleteId;
-    if (!athleteId) {
-      toast.error("Pilih atlet terlebih dahulu");
-      return;
-    }
-
-    createReadiness({
-      athlete_id: athleteId,
-      readiness_date: readinessForm.readinessDate,
-      resting_heart_rate: parseInt(readinessForm.restingHeartRate),
-      vertical_jump: parseFloat(readinessForm.verticalJump),
-    });
-
-    setReadinessForm({
-      readinessDate: format(new Date(), "yyyy-MM-dd"),
-      restingHeartRate: "",
-      verticalJump: "",
-    });
-  };
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -222,56 +192,6 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Athlete Readiness Input */}
-        {selectedAthleteId !== "all" && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Heart className="h-5 w-5" />
-                Input Data Kesiapan Atlet
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <Label htmlFor="readiness-date">Tanggal</Label>
-                  <Input
-                    id="readiness-date"
-                    type="date"
-                    value={readinessForm.readinessDate}
-                    onChange={(e) => setReadinessForm({ ...readinessForm, readinessDate: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="rhr">Resting Heart Rate (bpm)</Label>
-                  <Input
-                    id="rhr"
-                    type="number"
-                    placeholder="60"
-                    value={readinessForm.restingHeartRate}
-                    onChange={(e) => setReadinessForm({ ...readinessForm, restingHeartRate: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="vj">Vertical Jump (cm)</Label>
-                  <Input
-                    id="vj"
-                    type="number"
-                    step="0.1"
-                    placeholder="50"
-                    value={readinessForm.verticalJump}
-                    onChange={(e) => setReadinessForm({ ...readinessForm, verticalJump: e.target.value })}
-                  />
-                </div>
-                <div className="flex items-end">
-                  <Button onClick={handleAddReadiness} className="w-full">
-                    Tambah Data
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
@@ -410,20 +330,17 @@ const Dashboard = () => {
             {/* Readiness Trend */}
             <Card>
               <CardHeader>
-                <CardTitle>Athlete Readiness Trend</CardTitle>
+                <CardTitle>Athlete Readiness Trend (60% VJ + 40% RHR)</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={readinessTrendData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" />
-                    <YAxis yAxisId="left" />
-                    <YAxis yAxisId="right" orientation="right" />
+                    <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line yAxisId="left" type="monotone" dataKey="readiness" stroke="#8b5cf6" name="Readiness Score" />
-                    <Line yAxisId="right" type="monotone" dataKey="vo2max" stroke="#06b6d4" name="VO2max" />
-                    <Line yAxisId="right" type="monotone" dataKey="power" stroke="#f59e0b" name="Power" />
+                    <Line type="monotone" dataKey="readiness" stroke="#8b5cf6" name="Readiness Score (%)" strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>

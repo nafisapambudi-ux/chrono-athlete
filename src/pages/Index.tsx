@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAthletes } from "@/hooks/useAthletes";
 import { useTrainingSessions } from "@/hooks/useTrainingSessions";
+import { useAthleteReadiness } from "@/hooks/useAthleteReadiness";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,14 +10,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, BarChart3, Search, ArrowUpDown } from "lucide-react";
+import { Loader2, BarChart3, Search, ArrowUpDown, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 
 const Index = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { athletes, isLoading: athletesLoading, createAthlete, updateAthlete, deleteAthlete } = useAthletes();
   const { sessions, isLoading: sessionsLoading, createSession, deleteSession } = useTrainingSessions();
+  const { createReadiness } = useAthleteReadiness();
   const { toast } = useToast();
 
   // Filter and sort states
@@ -37,6 +40,11 @@ const Index = () => {
     durationMinutes: "",
     rpe: "",
     notes: "",
+  });
+  const [readinessForm, setReadinessForm] = useState({
+    readinessDate: format(new Date(), "yyyy-MM-dd"),
+    restingHeartRate: "",
+    verticalJump: "",
   });
 
   // Filtered and sorted athletes
@@ -91,6 +99,31 @@ const Index = () => {
       vertical_jump: athleteForm.verticalJump ? Number(athleteForm.verticalJump) : undefined,
     });
     setAthleteForm({ name: "", bodyHeight: "", mass: "", verticalJump: "" });
+  };
+
+  const handleAddReadiness = () => {
+    if (!readinessForm.restingHeartRate || !readinessForm.verticalJump) {
+      toast({ title: "Mohon isi semua data kesiapan", variant: "destructive" });
+      return;
+    }
+
+    if (!selectedAthleteId) {
+      toast({ title: "Pilih atlet terlebih dahulu", variant: "destructive" });
+      return;
+    }
+
+    createReadiness({
+      athlete_id: selectedAthleteId,
+      readiness_date: readinessForm.readinessDate,
+      resting_heart_rate: parseInt(readinessForm.restingHeartRate),
+      vertical_jump: parseFloat(readinessForm.verticalJump),
+    });
+
+    setReadinessForm({
+      readinessDate: format(new Date(), "yyyy-MM-dd"),
+      restingHeartRate: "",
+      verticalJump: "",
+    });
   };
 
   const handleAddSession = async (e: React.FormEvent) => {
@@ -338,6 +371,55 @@ const Index = () => {
                       Add Session
                     </Button>
                   </form>
+
+                  {/* Athlete Readiness Input */}
+                  <Card className="my-6">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Heart className="h-5 w-5" />
+                        Input Data Kesiapan Atlet
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                          <Label htmlFor="readiness-date">Tanggal</Label>
+                          <Input
+                            id="readiness-date"
+                            type="date"
+                            value={readinessForm.readinessDate}
+                            onChange={(e) => setReadinessForm({ ...readinessForm, readinessDate: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="rhr">Resting Heart Rate (bpm)</Label>
+                          <Input
+                            id="rhr"
+                            type="number"
+                            placeholder="60"
+                            value={readinessForm.restingHeartRate}
+                            onChange={(e) => setReadinessForm({ ...readinessForm, restingHeartRate: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="vj">Vertical Jump (cm)</Label>
+                          <Input
+                            id="vj"
+                            type="number"
+                            step="0.1"
+                            placeholder="50"
+                            value={readinessForm.verticalJump}
+                            onChange={(e) => setReadinessForm({ ...readinessForm, verticalJump: e.target.value })}
+                          />
+                        </div>
+                        <div className="flex items-end">
+                          <Button onClick={handleAddReadiness} className="w-full">
+                            Tambah Data Kesiapan
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
 
                   <div className="space-y-2">
                     {sessionsLoading ? (
