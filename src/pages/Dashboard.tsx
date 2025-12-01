@@ -165,9 +165,14 @@ const Dashboard = () => {
             </Button>
             <h1 className="text-4xl font-bold text-foreground">Analytics Dashboard</h1>
           </div>
-          <Button onClick={signOut} variant="outline">
-            Sign Out
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => navigate("/comparison")} variant="outline">
+              Compare Athletes
+            </Button>
+            <Button onClick={signOut} variant="outline">
+              Sign Out
+            </Button>
+          </div>
         </header>
 
         {/* Filter */}
@@ -275,7 +280,6 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{latestReadiness.readiness_score?.toFixed(1) || 0}</div>
-                <p className="text-xs text-muted-foreground">VJ: 60% | RHR: 40%</p>
               </CardContent>
             </Card>
             <Card>
@@ -330,7 +334,7 @@ const Dashboard = () => {
             {/* Readiness Trend */}
             <Card>
               <CardHeader>
-                <CardTitle>Athlete Readiness Trend (60% VJ + 40% RHR)</CardTitle>
+                <CardTitle>Athlete Readiness Trend</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -375,7 +379,7 @@ const Dashboard = () => {
           {/* Training Load */}
           <Card>
             <CardHeader>
-              <CardTitle>Training Load (RPE × Duration)</CardTitle>
+              <CardTitle>Training Load</CardTitle>
             </CardHeader>
             <CardContent>
               {trainingLoadData.length > 0 ? (
