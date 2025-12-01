@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { ArrowLeft, TrendingUp, Calendar, Clock, Activity, Heart, Zap } from "lucide-react";
+import { FitnessFatigueFormChart } from "@/components/FitnessFatigueFormChart";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO, subDays } from "date-fns";
 import { toast } from "sonner";
@@ -305,28 +306,9 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 gap-6 mb-6">
-          {/* Fitness/Fatigue/Form */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Fitness, Fatigue & Form Trend</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={fitnessTrendData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="fitness" stroke="#10b981" name="Fitness (CTL)" />
-                  <Line type="monotone" dataKey="fatigue" stroke="#ef4444" name="Fatigue (ATL)" />
-                  <Line type="monotone" dataKey="form" stroke="#3b82f6" name="Form (TSB)" />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+        {/* Fitness-Fatigue-Form Analysis */}
+        <div className="mb-6">
+          <FitnessFatigueFormChart sessions={filteredSessions} />
         </div>
 
         {selectedAthleteId !== "all" && readinessTrendData.length > 0 && (

@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAthletes } from "@/hooks/useAthletes";
 import { useTrainingSessions } from "@/hooks/useTrainingSessions";
 import { useAthleteReadiness } from "@/hooks/useAthleteReadiness";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, BarChart3, Search, ArrowUpDown, Heart } from "lucide-react";
+import { Loader2, BarChart3, Search, ArrowUpDown, Heart, Upload, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 
@@ -35,6 +36,8 @@ const Index = () => {
     mass: "",
     verticalJump: "",
   });
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [sessionForm, setSessionForm] = useState({
     sessionDate: "",
     durationMinutes: "",
@@ -92,13 +95,53 @@ const Index = () => {
 
   const handleAddAthlete = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    let avatarUrl: string | undefined = undefined;
+    
+    // Upload avatar if file is selected
+    if (avatarFile && user) {
+      const fileExt = avatarFile.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('athlete-avatars')
+        .upload(fileName, avatarFile);
+      
+      if (uploadError) {
+        toast({ title: "Gagal mengunggah foto", description: uploadError.message, variant: "destructive" });
+        return;
+      }
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('athlete-avatars')
+        .getPublicUrl(fileName);
+      
+      avatarUrl = publicUrl;
+    }
+    
     createAthlete({
       name: athleteForm.name,
       body_height: athleteForm.bodyHeight ? Number(athleteForm.bodyHeight) : undefined,
       mass: athleteForm.mass ? Number(athleteForm.mass) : undefined,
       vertical_jump: athleteForm.verticalJump ? Number(athleteForm.verticalJump) : undefined,
+      avatar_url: avatarUrl,
     });
+    
     setAthleteForm({ name: "", bodyHeight: "", mass: "", verticalJump: "" });
+    setAvatarFile(null);
+    setAvatarPreview(null);
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleAddReadiness = () => {
@@ -199,6 +242,30 @@ const Index = () => {
                     required
                   />
                 </div>
+                
+                {/* Avatar Upload */}
+                <div>
+                  <Label htmlFor="avatar">Profile Photo</Label>
+                  <div className="flex items-center gap-4">
+                    {avatarPreview ? (
+                      <img src={avatarPreview} alt="Preview" className="w-16 h-16 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+                        <User className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <Input
+                        id="avatar"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarChange}
+                        className="cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
                 <div className="grid grid-cols-3 gap-2">
                   <div>
                     <Label htmlFor="height">Height (cm)</Label>
@@ -254,14 +321,27 @@ const Index = () => {
                       }`}
                       onClick={() => setSelectedAthleteId(athlete.id)}
                     >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-semibold">{athlete.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {athlete.body_height && `Height: ${athlete.body_height}cm`}
-                            {athlete.mass && ` | Mass: ${athlete.mass}kg`}
-                            {athlete.vertical_jump && ` | Jump: ${athlete.vertical_jump}cm`}
-                          </p>
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="flex items-center gap-3 flex-1">
+                          {athlete.avatar_url ? (
+                            <img 
+                              src={athlete.avatar_url} 
+                              alt={athlete.name}
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                              <User className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="font-semibold">{athlete.name}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {athlete.body_height && `Height: ${athlete.body_height}cm`}
+                              {athlete.mass && ` | Mass: ${athlete.mass}kg`}
+                              {athlete.vertical_jump && ` | Jump: ${athlete.vertical_jump}cm`}
+                            </p>
+                          </div>
                         </div>
                         <Button
                           size="sm"
