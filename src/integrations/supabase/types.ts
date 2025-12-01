@@ -60,6 +60,7 @@ export type Database = {
       }
       athletes: {
         Row: {
+          avatar_url: string | null
           body_height: number | null
           created_at: string
           id: string
@@ -70,6 +71,7 @@ export type Database = {
           vertical_jump: number | null
         }
         Insert: {
+          avatar_url?: string | null
           body_height?: number | null
           created_at?: string
           id?: string
@@ -80,6 +82,7 @@ export type Database = {
           vertical_jump?: number | null
         }
         Update: {
+          avatar_url?: string | null
           body_height?: number | null
           created_at?: string
           id?: string
