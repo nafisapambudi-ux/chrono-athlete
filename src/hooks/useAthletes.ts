@@ -11,6 +11,7 @@ export interface Athlete {
   mass: number | null;
   body_height: number | null;
   vertical_jump: number | null;
+  avatar_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -20,6 +21,7 @@ export interface AthleteInput {
   mass?: number;
   body_height?: number;
   vertical_jump?: number;
+  avatar_url?: string;
 }
 
 export function useAthletes() {
@@ -55,6 +57,7 @@ export function useAthletes() {
           mass: validatedData.mass,
           body_height: validatedData.body_height,
           vertical_jump: validatedData.vertical_jump,
+          avatar_url: athlete.avatar_url,
           user_id: user.id,
         })
         .select()
