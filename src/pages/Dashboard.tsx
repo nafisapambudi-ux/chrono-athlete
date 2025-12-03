@@ -48,46 +48,39 @@ const Dashboard = () => {
     ? readinessData
     : readinessData.filter(r => r.athlete_id === selectedAthleteId);
 
-  // Calculate fitness, fatigue, and form
+  // Calculate fitness, fatigue, and form using the same logic as FitnessFatigueFormChart
   const calculateFitnessFatigue = () => {
-    const today = new Date();
-    const last42Days = subDays(today, 42);
-    const last7Days = subDays(today, 7);
+    if (filteredSessions.length === 0) {
+      return { fitness: 0, fatigue: 0, form: 0, formPercent: 0 };
+    }
 
-    const recentSessions = filteredSessions.filter(
-      s => new Date(s.session_date) >= last42Days
+    const sortedSessions = [...filteredSessions].sort(
+      (a, b) => new Date(a.session_date).getTime() - new Date(b.session_date).getTime()
     );
 
-    // Fitness (CTL - Chronic Training Load): 42-day exponential weighted average
-    const fitness = recentSessions.reduce((sum, session) => {
-      const load = calculateTrainingLoad(session.rpe, session.duration_minutes);
-      const daysAgo = Math.floor(
-        (today.getTime() - new Date(session.session_date).getTime()) / (1000 * 60 * 60 * 24)
-      );
-      const weight = Math.exp(-daysAgo / 42);
-      return sum + load * weight;
-    }, 0);
+    const last42Sessions = sortedSessions.slice(-42);
+    const last7Sessions = sortedSessions.slice(-7);
 
-    // Fatigue (ATL - Acute Training Load): 7-day exponential weighted average
-    const fatigueSessions = recentSessions.filter(
-      s => new Date(s.session_date) >= last7Days
-    );
-    const fatigue = fatigueSessions.reduce((sum, session) => {
-      const load = calculateTrainingLoad(session.rpe, session.duration_minutes);
-      const daysAgo = Math.floor(
-        (today.getTime() - new Date(session.session_date).getTime()) / (1000 * 60 * 60 * 24)
-      );
-      const weight = Math.exp(-daysAgo / 7);
-      return sum + load * weight;
-    }, 0);
+    const fitness =
+      last42Sessions.reduce(
+        (sum, session) => sum + calculateTrainingLoad(session.rpe, session.duration_minutes),
+        0
+      ) / 42;
 
-    // Form (TSB - Training Stress Balance): Fitness - Fatigue
+    const fatigue =
+      last7Sessions.reduce(
+        (sum, session) => sum + calculateTrainingLoad(session.rpe, session.duration_minutes),
+        0
+      ) / 7;
+
     const form = fitness - fatigue;
+    const formPercentRaw = fitness > 0 ? (form / fitness) * 100 : 0;
+    const formPercent = Math.max(-40, Math.min(40, formPercentRaw));
 
-    return { fitness, fatigue, form };
+    return { fitness, fatigue, form, formPercent };
   };
 
-  const { fitness, fatigue, form } = calculateFitnessFatigue();
+  const { fitness, fatigue, form, formPercent } = calculateFitnessFatigue();
 
   // RPE Trend Data
   const rpeData = filteredSessions
@@ -200,72 +193,93 @@ const Dashboard = () => {
 
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-8">
+          <Card className="bg-slate-900 border-slate-800">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs font-semibold tracking-wide text-slate-400 uppercase">
+                Total Sessions
+              </CardTitle>
+              <Calendar className="h-4 w-4 text-slate-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalSessions}</div>
+              <div className="text-3xl font-bold tracking-tight text-slate-50">{totalSessions}</div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-slate-900 border-slate-800">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Average RPE</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs font-semibold tracking-wide text-slate-400 uppercase">
+                Average RPE
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-slate-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{avgRPE}/10</div>
+              <div className="text-3xl font-bold tracking-tight text-slate-50">{avgRPE}/10</div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-slate-900 border-slate-800">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Duration</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs font-semibold tracking-wide text-slate-400 uppercase">
+                Total Duration
+              </CardTitle>
+              <Clock className="h-4 w-4 text-slate-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalDuration} min</div>
+              <div className="text-3xl font-bold tracking-tight text-slate-50">{totalDuration} min</div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-slate-900 border-slate-800">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg Duration</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs font-semibold tracking-wide text-slate-400 uppercase">
+                Avg Duration
+              </CardTitle>
+              <Clock className="h-4 w-4 text-slate-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{avgDuration} min</div>
+              <div className="text-3xl font-bold tracking-tight text-slate-50">{avgDuration} min</div>
             </CardContent>
           </Card>
-          <Card>
+
+          <Card className="bg-slate-900 border-slate-800">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Fitness (CTL)</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs font-semibold tracking-wide text-slate-400 uppercase">
+                Fitness (CTL)
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-slate-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{fitness.toFixed(1)}</div>
+              <div className="text-3xl font-bold tracking-tight text-cyan-400">{fitness.toFixed(1)}</div>
             </CardContent>
           </Card>
-          <Card>
+
+          <Card className="bg-slate-900 border-slate-800">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Fatigue (ATL)</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs font-semibold tracking-wide text-slate-400 uppercase">
+                Fatigue (ATL)
+              </CardTitle>
+              <Activity className="h-4 w-4 text-slate-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{fatigue.toFixed(1)}</div>
+              <div className="text-3xl font-bold tracking-tight text-purple-400">{fatigue.toFixed(1)}</div>
             </CardContent>
           </Card>
-          <Card>
+
+          <Card className="bg-slate-900 border-slate-800">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Form (TSB)</CardTitle>
-              <Zap className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs font-semibold tracking-wide text-slate-400 uppercase">
+                Form (TSB %)
+              </CardTitle>
+              <Zap className="h-4 w-4 text-slate-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold" style={{ color: form > 0 ? 'green' : 'red' }}>
-                {form.toFixed(1)}
+              <div
+                className={`text-3xl font-bold tracking-tight ${
+                  formPercent >= 0 ? "text-emerald-400" : "text-red-400"
+                }`}
+              >
+                {formPercent.toFixed(1)}%
               </div>
             </CardContent>
           </Card>
