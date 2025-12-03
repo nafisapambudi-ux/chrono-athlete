@@ -57,7 +57,7 @@ export const FitnessFatigueFormChart = ({ sessions }: FitnessFatigueFormChartPro
   }).slice(-14); // Last 14 days
 
   // Calculate current metrics
-  const latestData = chartData[chartData.length - 1] || { ctl: 0, atl: 0, tsbPercent: 0 };
+  const latestData = chartData[chartData.length - 1] || { ctl: 0, atl: 0, tsb: 0, tsbPercent: 0 };
   const previousData = chartData[chartData.length - 2] || { ctl: 0 };
   const ramp = latestData.ctl - previousData.ctl;
 
@@ -86,7 +86,7 @@ export const FitnessFatigueFormChart = ({ sessions }: FitnessFatigueFormChartPro
             </div>
             <div>
               <p className="text-slate-400 text-xs uppercase tracking-wider">Form</p>
-              <p className="text-yellow-400 text-3xl font-bold">{latestData.tsbPercent.toFixed(0)}%</p>
+              <p className="text-yellow-400 text-3xl font-bold">{latestData.tsb.toFixed(1)}</p>
             </div>
             <div>
               <p className="text-slate-400 text-xs uppercase tracking-wider">Ramp</p>
