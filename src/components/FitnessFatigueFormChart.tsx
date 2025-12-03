@@ -40,7 +40,9 @@ export const FitnessFatigueFormChart = ({ sessions }: FitnessFatigueFormChartPro
     
     // TSB (Training Stress Balance) = CTL - ATL
     const tsb = ctl - atl;
-    const tsbPercent = ctl > 0 ? ((tsb / ctl) * 100) : 0;
+    const tsbPercentRaw = ctl > 0 ? ((tsb / ctl) * 100) : 0;
+    // Clamp form percentage so it stays in a realistic range
+    const tsbPercentClamped = Math.max(-40, Math.min(40, tsbPercentRaw));
     
     const dailyLoad = calculateTrainingLoad(session.rpe, session.duration_minutes);
     
@@ -50,7 +52,7 @@ export const FitnessFatigueFormChart = ({ sessions }: FitnessFatigueFormChartPro
       ctl: parseFloat(ctl.toFixed(1)),
       atl: parseFloat(atl.toFixed(1)),
       tsb: parseFloat(tsb.toFixed(1)),
-      tsbPercent: parseFloat(tsbPercent.toFixed(1)),
+      tsbPercent: parseFloat(tsbPercentClamped.toFixed(1)),
     };
   }).slice(-14); // Last 14 days
 
