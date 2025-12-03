@@ -51,7 +51,7 @@ const Dashboard = () => {
   // Calculate fitness, fatigue, and form using the same logic as FitnessFatigueFormChart
   const calculateFitnessFatigue = () => {
     if (filteredSessions.length === 0) {
-      return { fitness: 0, fatigue: 0, form: 0, formPercent: 0 };
+      return { fitness: 0, fatigue: 0, form: 0 };
     }
 
     const sortedSessions = [...filteredSessions].sort(
@@ -74,13 +74,11 @@ const Dashboard = () => {
       ) / 7;
 
     const form = fitness - fatigue;
-    const formPercentRaw = fitness > 0 ? (form / fitness) * 100 : 0;
-    const formPercent = Math.max(-40, Math.min(40, formPercentRaw));
 
-    return { fitness, fatigue, form, formPercent };
+    return { fitness, fatigue, form };
   };
 
-  const { fitness, fatigue, form, formPercent } = calculateFitnessFatigue();
+  const { fitness, fatigue, form } = calculateFitnessFatigue();
 
   // RPE Trend Data
   const rpeData = filteredSessions
@@ -269,17 +267,17 @@ const Dashboard = () => {
           <Card className="bg-slate-900 border-slate-800">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs font-semibold tracking-wide text-slate-400 uppercase">
-                Form (TSB %)
+                Form (Fitness - Fatigue)
               </CardTitle>
               <Zap className="h-4 w-4 text-slate-500" />
             </CardHeader>
             <CardContent>
               <div
                 className={`text-3xl font-bold tracking-tight ${
-                  formPercent >= 0 ? "text-emerald-400" : "text-red-400"
+                  form >= 0 ? "text-emerald-400" : "text-red-400"
                 }`}
               >
-                {formPercent.toFixed(1)}%
+                {form.toFixed(1)}
               </div>
             </CardContent>
           </Card>
