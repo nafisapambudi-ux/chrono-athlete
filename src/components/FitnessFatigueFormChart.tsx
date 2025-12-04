@@ -64,7 +64,7 @@ export const FitnessFatigueFormChart = ({ sessions }: FitnessFatigueFormChartPro
   // Form zone data for the bottom chart
   const formZoneData = chartData.map(d => ({
     date: d.date,
-    tsb: d.tsb,
+    tsbPercent: d.tsbPercent,
   }));
 
   return (
@@ -160,9 +160,10 @@ export const FitnessFatigueFormChart = ({ sessions }: FitnessFatigueFormChartPro
                 tick={{ fill: '#94a3b8', fontSize: 12 }}
               />
               <YAxis 
+                domain={[-40, 40]}
                 stroke="#94a3b8"
                 tick={{ fill: '#94a3b8', fontSize: 12 }}
-                label={{ value: 'Form (Fitness - Fatigue)', angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 12 }}
+                label={{ value: 'Form %', angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 12 }}
               />
               <Tooltip 
                 contentStyle={{ 
@@ -172,16 +173,48 @@ export const FitnessFatigueFormChart = ({ sessions }: FitnessFatigueFormChartPro
                   color: '#f1f5f9'
                 }}
               />
+              
+              {/* Zone bands */}
+              <ReferenceLine y={-30} stroke="#dc2626" strokeDasharray="3 3" />
+              <ReferenceLine y={-10} stroke="#eab308" strokeDasharray="3 3" />
+              <ReferenceLine y={5} stroke="#64748b" strokeDasharray="3 3" />
+              <ReferenceLine y={20} stroke="#22c55e" strokeDasharray="3 3" />
+              <ReferenceLine y={0} stroke="#475569" strokeWidth={1} />
+              
               <Line 
                 type="monotone" 
-                dataKey="tsb" 
+                dataKey="tsbPercent" 
                 stroke="#f97316" 
                 strokeWidth={3}
-                name="Form (Fitness - Fatigue)"
+                name="Form %"
                 dot={false}
               />
             </ComposedChart>
           </ResponsiveContainer>
+          
+          {/* Legend for zones */}
+          <div className="flex justify-center gap-4 mt-4 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-red-600"></div>
+              <span className="text-slate-300">High Risk (&lt; -30)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-green-500"></div>
+              <span className="text-slate-300">Optimal (-30 to -10)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-slate-500"></div>
+              <span className="text-slate-300">Grey Zone (-10 to 5)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
+              <span className="text-slate-300">Fresh (5 to 20)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+              <span className="text-slate-300">Transition (≥20)</span>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
