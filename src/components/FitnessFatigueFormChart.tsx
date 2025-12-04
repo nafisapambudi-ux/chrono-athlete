@@ -61,7 +61,7 @@ export const FitnessFatigueFormChart = ({ sessions }: FitnessFatigueFormChartPro
   // Form zone data for the bottom chart
   const formZoneData = chartData.map(d => ({
     date: d.date,
-    tsbPercent: d.tsbPercent,
+    tsb: d.tsb,
   }));
 
   return (
@@ -160,7 +160,7 @@ export const FitnessFatigueFormChart = ({ sessions }: FitnessFatigueFormChartPro
                 domain={["dataMin - 5", "dataMax + 5"]}
                 stroke="#94a3b8"
                 tick={{ fill: '#94a3b8', fontSize: 12 }}
-                label={{ value: 'Form %', angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 12 }}
+                label={{ value: 'Form (Fatigue - Fitness)', angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 12 }}
               />
               <Tooltip 
                 contentStyle={{ 
@@ -180,10 +180,10 @@ export const FitnessFatigueFormChart = ({ sessions }: FitnessFatigueFormChartPro
               
               <Line 
                 type="monotone" 
-                dataKey="tsbPercent" 
+                dataKey="tsb" 
                 stroke="#f97316" 
                 strokeWidth={3}
-                name="Form %"
+                name="Form (Fatigue - Fitness)"
                 dot={false}
               />
             </ComposedChart>
