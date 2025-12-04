@@ -30,19 +30,16 @@ export const FitnessFatigueFormChart = ({ sessions }: FitnessFatigueFormChartPro
   const chartData = sortedSessions.map((session, index) => {
     const sessionsUpToNow = sortedSessions.slice(0, index + 1);
     
-    // CTL (Chronic Training Load) - 42 day exponential weighted average
+    // CTL (Chronic Training Load) - 42 day moving average
     const ctl = sessionsUpToNow.slice(-42).reduce((sum, s) => 
       sum + calculateTrainingLoad(s.rpe, s.duration_minutes), 0) / 42;
     
-    // ATL (Acute Training Load) - 7 day exponential weighted average
+    // ATL (Acute Training Load) - 7 day moving average
     const atl = sessionsUpToNow.slice(-7).reduce((sum, s) => 
       sum + calculateTrainingLoad(s.rpe, s.duration_minutes), 0) / 7;
-    
-    // TSB (Training Stress Balance) = CTL - ATL
-    const tsb = ctl - atl;
+    // Form = Fatigue - Fitness (ATL - CTL), expressed as % of Fitness
+    const tsb = atl - ctl;
     const tsbPercentRaw = ctl > 0 ? ((tsb / ctl) * 100) : 0;
-    // Clamp form percentage so it stays in a realistic range
-    const tsbPercentClamped = Math.max(-40, Math.min(40, tsbPercentRaw));
     
     const dailyLoad = calculateTrainingLoad(session.rpe, session.duration_minutes);
     
@@ -52,7 +49,7 @@ export const FitnessFatigueFormChart = ({ sessions }: FitnessFatigueFormChartPro
       ctl: parseFloat(ctl.toFixed(1)),
       atl: parseFloat(atl.toFixed(1)),
       tsb: parseFloat(tsb.toFixed(1)),
-      tsbPercent: parseFloat(tsbPercentClamped.toFixed(1)),
+      tsbPercent: parseFloat(tsbPercentRaw.toFixed(1)),
     };
   }).slice(-14); // Last 14 days
 
@@ -160,7 +157,7 @@ export const FitnessFatigueFormChart = ({ sessions }: FitnessFatigueFormChartPro
                 tick={{ fill: '#94a3b8', fontSize: 12 }}
               />
               <YAxis 
-                domain={[-40, 40]}
+                domain={["dataMin - 5", "dataMax + 5"]}
                 stroke="#94a3b8"
                 tick={{ fill: '#94a3b8', fontSize: 12 }}
                 label={{ value: 'Form %', angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 12 }}
