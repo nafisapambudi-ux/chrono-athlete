@@ -30,16 +30,20 @@ export const FitnessFatigueFormChart = ({ sessions }: FitnessFatigueFormChartPro
   const chartData = sortedSessions.map((session, index) => {
     const sessionsUpToNow = sortedSessions.slice(0, index + 1);
     
-    // CTL (Chronic Training Load) - 42 day moving average
-    const ctl = sessionsUpToNow.slice(-42).reduce((sum, s) => 
-      sum + calculateTrainingLoad(s.rpe, s.duration_minutes), 0) / 42;
+    // CTL (Chronic Training Load) - average of last 42 sessions (or all if less)
+    const ctlSessions = sessionsUpToNow.slice(-42);
+    const ctlSum = ctlSessions.reduce((sum, s) => 
+      sum + calculateTrainingLoad(s.rpe, s.duration_minutes), 0);
+    const ctl = ctlSessions.length > 0 ? ctlSum / ctlSessions.length : 0;
     
-    // ATL (Acute Training Load) - 7 day moving average
-    const atl = sessionsUpToNow.slice(-7).reduce((sum, s) => 
-      sum + calculateTrainingLoad(s.rpe, s.duration_minutes), 0) / 7;
-    // Form = Fatigue - Fitness (ATL - CTL), expressed as % of Fitness
+    // ATL (Acute Training Load) - average of last 7 sessions (or all if less)
+    const atlSessions = sessionsUpToNow.slice(-7);
+    const atlSum = atlSessions.reduce((sum, s) => 
+      sum + calculateTrainingLoad(s.rpe, s.duration_minutes), 0);
+    const atl = atlSessions.length > 0 ? atlSum / atlSessions.length : 0;
+    
+    // Form = Fatigue - Fitness (ATL - CTL)
     const tsb = atl - ctl;
-    const tsbPercentRaw = ctl > 0 ? ((tsb / ctl) * 100) : 0;
     
     const dailyLoad = calculateTrainingLoad(session.rpe, session.duration_minutes);
     
@@ -49,7 +53,6 @@ export const FitnessFatigueFormChart = ({ sessions }: FitnessFatigueFormChartPro
       ctl: parseFloat(ctl.toFixed(1)),
       atl: parseFloat(atl.toFixed(1)),
       tsb: parseFloat(tsb.toFixed(1)),
-      tsbPercent: parseFloat(tsbPercentRaw.toFixed(1)),
     };
   }).slice(-14); // Last 14 days
 
