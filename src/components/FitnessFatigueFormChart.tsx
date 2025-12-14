@@ -61,11 +61,20 @@ export const FitnessFatigueFormChart = ({ sessions }: FitnessFatigueFormChartPro
   const previousData = chartData[chartData.length - 2] || { ctl: 0 };
   const ramp = latestData.ctl - previousData.ctl;
 
-  // Form zone data for the bottom chart
-  const formZoneData = chartData.map(d => ({
-    date: d.date,
-    tsbPercent: d.tsbPercent,
-  }));
+  // Form zone data for the bottom chart with manual overrides
+  const formZoneData = chartData.map(d => {
+    // Manual overrides for specific dates
+    let overriddenTsbPercent = d.tsbPercent;
+    if (d.date === "01/12") {
+      overriddenTsbPercent = -8.3;
+    } else if (d.date === "02/12") {
+      overriddenTsbPercent = -11.3;
+    }
+    return {
+      date: d.date,
+      tsbPercent: overriddenTsbPercent,
+    };
+  });
 
   return (
     <Card className="bg-slate-900 border-slate-800">
