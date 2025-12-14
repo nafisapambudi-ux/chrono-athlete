@@ -1,9 +1,12 @@
 import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 import "./index.css";
 
 createRoot(document.getElementById("root")!).render(
-  <div className="dark min-h-screen bg-background text-foreground">
-    <App />
-  </div>
+  <BrowserRouter>
+    <div className="dark min-h-screen bg-background text-foreground">
+      <App />
+    </div>
+  </BrowserRouter>
 );
