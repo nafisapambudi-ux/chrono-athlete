@@ -1,6 +1,12 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Area } from "recharts";
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from "recharts";
 import { format, parseISO } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sparkles, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface FitnessFatigueFormChartProps {
   sessions: Array<{
@@ -8,6 +14,7 @@ interface FitnessFatigueFormChartProps {
     rpe: number;
     duration_minutes: number;
   }>;
+  athleteName?: string;
 }
 
 const RPE_LOAD_MAP: { [key: number]: number } = {
@@ -20,7 +27,11 @@ function calculateTrainingLoad(rpe: number, durationMinutes: number): number {
   return (loadPer60Min * durationMinutes) / 60;
 }
 
-export const FitnessFatigueFormChart = ({ sessions }: FitnessFatigueFormChartProps) => {
+export const FitnessFatigueFormChart = ({ sessions, athleteName }: FitnessFatigueFormChartProps) => {
+  const [selectedDate, setSelectedDate] = useState<string>("latest");
+  const [aiAnalysis, setAiAnalysis] = useState<string>("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
   // Sort sessions by date
   const sortedSessions = [...sessions].sort((a, b) => 
     new Date(a.session_date).getTime() - new Date(b.session_date).getTime()
@@ -48,6 +59,7 @@ export const FitnessFatigueFormChart = ({ sessions }: FitnessFatigueFormChartPro
     
     return {
       date: format(parseISO(session.session_date), "dd/MM"),
+      fullDate: session.session_date,
       dailyLoad: parseFloat(dailyLoad.toFixed(1)),
       ctl: parseFloat(ctl.toFixed(1)),
       atl: parseFloat(atl.toFixed(1)),
@@ -56,10 +68,15 @@ export const FitnessFatigueFormChart = ({ sessions }: FitnessFatigueFormChartPro
     };
   }).slice(-14); // Last 14 days
 
-  // Calculate current metrics
-  const latestData = chartData[chartData.length - 1] || { ctl: 0, atl: 0, tsb: 0, tsbPercent: 0 };
-  const previousData = chartData[chartData.length - 2] || { ctl: 0 };
-  const ramp = latestData.ctl - previousData.ctl;
+  // Get selected date data
+  const selectedData = selectedDate === "latest" 
+    ? chartData[chartData.length - 1] 
+    : chartData.find(d => d.date === selectedDate) || chartData[chartData.length - 1];
+
+  // Calculate ramp based on selected date
+  const selectedIndex = chartData.findIndex(d => d.date === selectedData?.date);
+  const previousData = selectedIndex > 0 ? chartData[selectedIndex - 1] : { ctl: 0 };
+  const ramp = selectedData ? selectedData.ctl - previousData.ctl : 0;
 
   // Form zone data for the bottom chart with manual overrides
   const formZoneData = chartData.map(d => {
@@ -76,31 +93,116 @@ export const FitnessFatigueFormChart = ({ sessions }: FitnessFatigueFormChartPro
     };
   });
 
+  // Get form percent for selected date (with overrides)
+  const selectedFormData = formZoneData.find(d => d.date === selectedData?.date);
+  const displayFormPercent = selectedFormData?.tsbPercent ?? selectedData?.tsbPercent ?? 0;
+
+  const handleAnalyze = async () => {
+    if (!selectedData) {
+      toast.error("Tidak ada data untuk dianalisis");
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setAiAnalysis("");
+
+    try {
+      const { data, error } = await supabase.functions.invoke("analyze-athlete-condition", {
+        body: {
+          fitness: selectedData.ctl,
+          fatigue: selectedData.atl,
+          form: selectedData.tsb,
+          formPercent: displayFormPercent,
+          ramp: ramp,
+          athleteName: athleteName || "Atlet",
+          date: selectedData.date,
+        },
+      });
+
+      if (error) {
+        if (error.message?.includes("429")) {
+          toast.error("Rate limit tercapai. Coba lagi nanti.");
+        } else if (error.message?.includes("402")) {
+          toast.error("Credit tidak cukup. Silakan tambahkan credit.");
+        } else {
+          toast.error("Gagal menganalisis kondisi");
+        }
+        return;
+      }
+
+      setAiAnalysis(data.analysis);
+    } catch (err) {
+      console.error("Analysis error:", err);
+      toast.error("Terjadi kesalahan saat menganalisis");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   return (
     <Card className="bg-slate-900 border-slate-800">
       <CardHeader>
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className="text-slate-100 text-2xl font-bold">Fitness-Fatigue-Form Analysis</CardTitle>
-            <p className="text-slate-400 text-sm mt-1">{chartData.length} weeks {chartData.length > 0 ? Math.floor(chartData.length / 7) : 0} days</p>
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle className="text-slate-100 text-2xl font-bold">Fitness-Fatigue-Form Analysis</CardTitle>
+              <p className="text-slate-400 text-sm mt-1">{chartData.length} hari terakhir</p>
+            </div>
+            <div className="grid grid-cols-4 gap-6 text-right">
+              <div>
+                <p className="text-slate-400 text-xs uppercase tracking-wider">Fitness</p>
+                <p className="text-cyan-400 text-3xl font-bold">{selectedData?.ctl.toFixed(0) || 0}</p>
+              </div>
+              <div>
+                <p className="text-slate-400 text-xs uppercase tracking-wider">Fatigue</p>
+                <p className="text-purple-400 text-3xl font-bold">{selectedData?.atl.toFixed(0) || 0}</p>
+              </div>
+              <div>
+                <p className="text-slate-400 text-xs uppercase tracking-wider">Form</p>
+                <p className="text-yellow-400 text-3xl font-bold">{selectedData?.tsb.toFixed(1) || 0}</p>
+              </div>
+              <div>
+                <p className="text-slate-400 text-xs uppercase tracking-wider">Ramp</p>
+                <p className="text-slate-100 text-3xl font-bold">{ramp.toFixed(1)}</p>
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-4 gap-6 text-right">
-            <div>
-              <p className="text-slate-400 text-xs uppercase tracking-wider">Fitness</p>
-              <p className="text-cyan-400 text-3xl font-bold">{latestData.ctl.toFixed(0)}</p>
+          
+          {/* Date selector and AI Analysis button */}
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400 text-sm">Pilih Tanggal:</span>
+              <Select value={selectedDate} onValueChange={setSelectedDate}>
+                <SelectTrigger className="w-[140px] bg-slate-800 border-slate-700">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="latest">Terbaru</SelectItem>
+                  {chartData.map(d => (
+                    <SelectItem key={d.date} value={d.date}>
+                      {d.date}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div>
-              <p className="text-slate-400 text-xs uppercase tracking-wider">Fatigue</p>
-              <p className="text-purple-400 text-3xl font-bold">{latestData.atl.toFixed(0)}</p>
-            </div>
-            <div>
-              <p className="text-slate-400 text-xs uppercase tracking-wider">Form</p>
-              <p className="text-yellow-400 text-3xl font-bold">{latestData.tsb.toFixed(1)}</p>
-            </div>
-            <div>
-              <p className="text-slate-400 text-xs uppercase tracking-wider">Ramp</p>
-              <p className="text-slate-100 text-3xl font-bold">{ramp.toFixed(1)}</p>
-            </div>
+            <Button 
+              onClick={handleAnalyze} 
+              disabled={isAnalyzing || !selectedData}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+            >
+              {isAnalyzing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Menganalisis...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Analisis AI
+                </>
+              )}
+            </Button>
           </div>
         </div>
       </CardHeader>
@@ -225,6 +327,19 @@ export const FitnessFatigueFormChart = ({ sessions }: FitnessFatigueFormChartPro
             </div>
           </div>
         </div>
+
+        {/* AI Analysis Result */}
+        {aiAnalysis && (
+          <div className="mt-6 p-4 bg-slate-800 rounded-lg border border-slate-700">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="h-5 w-5 text-purple-400" />
+              <h3 className="text-slate-100 font-semibold">Analisis AI - {selectedData?.date}</h3>
+            </div>
+            <div className="text-slate-300 text-sm whitespace-pre-wrap leading-relaxed">
+              {aiAnalysis}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
