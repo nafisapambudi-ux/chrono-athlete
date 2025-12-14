@@ -320,7 +320,10 @@ const Dashboard = () => {
 
         {/* Fitness-Fatigue-Form Analysis */}
         <div className="mb-6">
-          <FitnessFatigueFormChart sessions={filteredSessions} />
+          <FitnessFatigueFormChart 
+            sessions={filteredSessions} 
+            athleteName={selectedAthleteId !== "all" ? athletes.find(a => a.id === selectedAthleteId)?.name : undefined}
+          />
         </div>
 
         {selectedAthleteId !== "all" && readinessTrendData.length > 0 && (
