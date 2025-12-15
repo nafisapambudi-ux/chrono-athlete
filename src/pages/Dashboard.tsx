@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { ArrowLeft, TrendingUp, Calendar, Clock, Activity, Heart, Zap } from "lucide-react";
 import { FitnessFatigueFormChart } from "@/components/FitnessFatigueFormChart";
+import { ReadinessStatsCard, getReadinessStatsForAI } from "@/components/ReadinessStatsCard";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO, subDays } from "date-fns";
 import { toast } from "sonner";
@@ -145,7 +146,9 @@ const Dashboard = () => {
     : 0;
 
   const latestReadiness = filteredReadiness[0];
-
+  const readinessStatsForAI = selectedAthleteId !== "all" && filteredReadiness.length > 0 
+    ? getReadinessStatsForAI(filteredReadiness) 
+    : undefined;
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -283,38 +286,13 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Readiness Stats */}
-        {selectedAthleteId !== "all" && latestReadiness && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Readiness Score</CardTitle>
-                <Heart className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{latestReadiness.readiness_score?.toFixed(1) || 0}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">VO2max</CardTitle>
-                <Activity className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{latestReadiness.vo2max?.toFixed(1) || 0}</div>
-                <p className="text-xs text-muted-foreground">ml/kg/min</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Power</CardTitle>
-                <Zap className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{latestReadiness.power?.toFixed(1) || 0}</div>
-                <p className="text-xs text-muted-foreground">watts</p>
-              </CardContent>
-            </Card>
+        {/* Readiness Stats with Indicators and Charts */}
+        {selectedAthleteId !== "all" && filteredReadiness.length > 0 && (
+          <div className="mb-6">
+            <ReadinessStatsCard 
+              readinessData={filteredReadiness} 
+              latestReadiness={latestReadiness} 
+            />
           </div>
         )}
 
@@ -323,31 +301,9 @@ const Dashboard = () => {
           <FitnessFatigueFormChart 
             sessions={filteredSessions} 
             athleteName={selectedAthleteId !== "all" ? athletes.find(a => a.id === selectedAthleteId)?.name : undefined}
+            readinessStats={readinessStatsForAI}
           />
         </div>
-
-        {selectedAthleteId !== "all" && readinessTrendData.length > 0 && (
-          <div className="grid grid-cols-1 gap-6 mb-6">
-            {/* Readiness Trend */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Athlete Readiness Trend</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={readinessTrendData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="readiness" stroke="#8b5cf6" name="Readiness Score (%)" strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* RPE Trend */}
