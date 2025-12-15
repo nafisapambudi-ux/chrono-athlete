@@ -8,6 +8,15 @@ import { Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+interface ReadinessStats {
+  readiness: { avg: number; low: number; peak: number };
+  vo2max: { avg: number; low: number; peak: number };
+  power: { avg: number; low: number; peak: number };
+  currentReadiness: number;
+  currentVO2max: number;
+  currentPower: number;
+}
+
 interface FitnessFatigueFormChartProps {
   sessions: Array<{
     session_date: string;
@@ -15,6 +24,7 @@ interface FitnessFatigueFormChartProps {
     duration_minutes: number;
   }>;
   athleteName?: string;
+  readinessStats?: ReadinessStats;
 }
 
 const RPE_LOAD_MAP: { [key: number]: number } = {
@@ -27,7 +37,7 @@ function calculateTrainingLoad(rpe: number, durationMinutes: number): number {
   return (loadPer60Min * durationMinutes) / 60;
 }
 
-export const FitnessFatigueFormChart = ({ sessions, athleteName }: FitnessFatigueFormChartProps) => {
+export const FitnessFatigueFormChart = ({ sessions, athleteName, readinessStats }: FitnessFatigueFormChartProps) => {
   const [selectedDate, setSelectedDate] = useState<string>("latest");
   const [aiAnalysis, setAiAnalysis] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -116,6 +126,7 @@ export const FitnessFatigueFormChart = ({ sessions, athleteName }: FitnessFatigu
           ramp: ramp,
           athleteName: athleteName || "Atlet",
           date: selectedData.date,
+          readinessStats: readinessStats,
         },
       });
 
