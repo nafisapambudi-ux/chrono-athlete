@@ -31,7 +31,7 @@ export default function Auth() {
         toast.success("Akun berhasil dibuat! Silakan masuk.");
         setIsLogin(true);
       }
-      navigate("/");
+      navigate("/app");
     } catch (error: any) {
       if (error.name === "ZodError") {
         toast.error(error.errors[0]?.message || "Data tidak valid");
