@@ -24,17 +24,25 @@ export const athleteSchema = z.object({
     .number()
     .positive({ message: "Massa harus positif" })
     .max(500, { message: "Massa tidak valid" })
-    .optional(),
+    .optional()
+    .nullable(),
   body_height: z
     .number()
     .positive({ message: "Tinggi badan harus positif" })
     .max(300, { message: "Tinggi badan tidak valid" })
-    .optional(),
+    .optional()
+    .nullable(),
   vertical_jump: z
     .number()
     .positive({ message: "Vertical jump harus positif" })
     .max(200, { message: "Vertical jump tidak valid" })
-    .optional(),
+    .optional()
+    .nullable(),
+  avatar_url: z
+    .string()
+    .url({ message: "URL avatar tidak valid" })
+    .optional()
+    .nullable(),
 });
 
 // Training session validation
