@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useAthletes } from "@/hooks/useAthletes";
+import { useAthletes, Athlete } from "@/hooks/useAthletes";
 import { useTrainingSessions } from "@/hooks/useTrainingSessions";
 import { useAthleteReadiness } from "@/hooks/useAthleteReadiness";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,9 +11,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, BarChart3, Search, ArrowUpDown, Heart, Upload, User } from "lucide-react";
+import { Loader2, BarChart3, Search, ArrowUpDown, Heart, Upload, User, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
+import { AthleteEditDialog } from "@/components/AthleteEditDialog";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -49,6 +50,15 @@ const Index = () => {
     restingHeartRate: "",
     verticalJump: "",
   });
+
+  // Edit dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingAthlete, setEditingAthlete] = useState<Athlete | null>(null);
+
+  const handleEditAthlete = (athlete: Athlete) => {
+    setEditingAthlete(athlete);
+    setEditDialogOpen(true);
+  };
 
   // Filtered and sorted athletes
   const filteredAthletes = useMemo(() => {
@@ -343,16 +353,28 @@ const Index = () => {
                             </p>
                           </div>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteAthlete(athlete.id);
-                          }}
-                        >
-                          Delete
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditAthlete(athlete);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteAthlete(athlete.id);
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -544,6 +566,14 @@ const Index = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Edit Athlete Dialog */}
+        <AthleteEditDialog
+          athlete={editingAthlete}
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          onUpdate={updateAthlete}
+        />
       </div>
     </div>
   );

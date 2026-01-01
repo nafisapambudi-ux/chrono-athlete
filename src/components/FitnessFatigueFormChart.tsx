@@ -1,14 +1,16 @@
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from "recharts";
-import { format, parseISO, isWithinInterval } from "date-fns";
+import { format, parseISO, isWithinInterval, subDays, subMonths, startOfWeek, startOfMonth } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, Loader2, Calendar } from "lucide-react";
+import { Sparkles, Loader2, Calendar, Download, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface ReadinessStats {
   readiness: { avg: number; low: number; peak: number };
@@ -39,6 +41,17 @@ function calculateTrainingLoad(rpe: number, durationMinutes: number): number {
   return (loadPer60Min * durationMinutes) / 60;
 }
 
+// Date preset options
+const DATE_PRESETS = [
+  { label: "7 Hari Terakhir", value: "7days" },
+  { label: "14 Hari Terakhir", value: "14days" },
+  { label: "30 Hari Terakhir", value: "30days" },
+  { label: "Minggu Ini", value: "thisWeek" },
+  { label: "Bulan Ini", value: "thisMonth" },
+  { label: "3 Bulan Terakhir", value: "3months" },
+  { label: "Semua Data", value: "all" },
+];
+
 export const FitnessFatigueFormChart = ({ sessions, athleteName, readinessStats }: FitnessFatigueFormChartProps) => {
   const [selectedDate, setSelectedDate] = useState<string>("latest");
   const [aiAnalysis, setAiAnalysis] = useState<string>("");
@@ -47,11 +60,50 @@ export const FitnessFatigueFormChart = ({ sessions, athleteName, readinessStats 
   // Date range filter
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+  const [datePreset, setDatePreset] = useState<string>("all");
 
   // Sort sessions by date
   const sortedSessions = [...sessions].sort((a, b) => 
     new Date(a.session_date).getTime() - new Date(b.session_date).getTime()
   );
+
+  // Apply date preset
+  const handleDatePreset = (preset: string) => {
+    setDatePreset(preset);
+    const today = new Date();
+    
+    switch (preset) {
+      case "7days":
+        setStartDate(format(subDays(today, 7), "yyyy-MM-dd"));
+        setEndDate(format(today, "yyyy-MM-dd"));
+        break;
+      case "14days":
+        setStartDate(format(subDays(today, 14), "yyyy-MM-dd"));
+        setEndDate(format(today, "yyyy-MM-dd"));
+        break;
+      case "30days":
+        setStartDate(format(subDays(today, 30), "yyyy-MM-dd"));
+        setEndDate(format(today, "yyyy-MM-dd"));
+        break;
+      case "thisWeek":
+        setStartDate(format(startOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd"));
+        setEndDate(format(today, "yyyy-MM-dd"));
+        break;
+      case "thisMonth":
+        setStartDate(format(startOfMonth(today), "yyyy-MM-dd"));
+        setEndDate(format(today, "yyyy-MM-dd"));
+        break;
+      case "3months":
+        setStartDate(format(subMonths(today, 3), "yyyy-MM-dd"));
+        setEndDate(format(today, "yyyy-MM-dd"));
+        break;
+      case "all":
+      default:
+        setStartDate("");
+        setEndDate("");
+        break;
+    }
+  };
 
   // Filter sessions by date range
   const filteredSessions = useMemo(() => {
@@ -95,6 +147,8 @@ export const FitnessFatigueFormChart = ({ sessions, athleteName, readinessStats 
         atl: parseFloat(atl.toFixed(1)),
         tsb: parseFloat(tsb.toFixed(1)),
         tsbPercent: parseFloat(tsbPercentClamped.toFixed(1)),
+        rpe: session.rpe,
+        duration: session.duration_minutes,
       };
     });
   }, [filteredSessions]);
@@ -174,6 +228,108 @@ export const FitnessFatigueFormChart = ({ sessions, athleteName, readinessStats 
   const handleClearFilter = () => {
     setStartDate("");
     setEndDate("");
+    setDatePreset("all");
+  };
+
+  // Export to CSV
+  const exportToCSV = () => {
+    if (chartData.length === 0) {
+      toast.error("Tidak ada data untuk diekspor");
+      return;
+    }
+
+    const headers = ["Tanggal", "RPE", "Durasi (min)", "Daily Load", "Fitness (CTL)", "Fatigue (ATL)", "Form (TSB)", "Form %"];
+    const rows = chartData.map(d => [
+      d.fullDate,
+      d.rpe,
+      d.duration,
+      d.dailyLoad,
+      d.ctl,
+      d.atl,
+      d.tsb,
+      d.tsbPercent
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `fitness-fatigue-form_${athleteName || "athlete"}_${format(new Date(), "yyyy-MM-dd")}.csv`;
+    link.click();
+
+    toast.success("Data berhasil diekspor ke CSV");
+  };
+
+  // Export to PDF
+  const exportToPDF = () => {
+    if (chartData.length === 0) {
+      toast.error("Tidak ada data untuk diekspor");
+      return;
+    }
+
+    const doc = new jsPDF();
+    
+    // Title
+    doc.setFontSize(18);
+    doc.text(`Laporan Fitness-Fatigue-Form`, 14, 22);
+    
+    doc.setFontSize(12);
+    doc.text(`Atlet: ${athleteName || "Tidak Diketahui"}`, 14, 32);
+    doc.text(`Tanggal: ${format(new Date(), "dd/MM/yyyy")}`, 14, 40);
+    
+    if (startDate || endDate) {
+      doc.text(`Rentang: ${startDate || "Awal"} - ${endDate || "Akhir"}`, 14, 48);
+    }
+
+    // Summary
+    if (selectedData) {
+      doc.setFontSize(14);
+      doc.text("Ringkasan Data Terbaru:", 14, 60);
+      doc.setFontSize(11);
+      doc.text(`• Fitness (CTL): ${selectedData.ctl}`, 20, 70);
+      doc.text(`• Fatigue (ATL): ${selectedData.atl}`, 20, 78);
+      doc.text(`• Form (TSB): ${selectedData.tsb}`, 20, 86);
+      doc.text(`• Form %: ${displayFormPercent}%`, 20, 94);
+      doc.text(`• Ramp: ${ramp.toFixed(1)}`, 20, 102);
+    }
+
+    // Table
+    const tableData = chartData.map(d => [
+      d.fullDate,
+      d.rpe.toString(),
+      d.duration.toString(),
+      d.dailyLoad.toString(),
+      d.ctl.toString(),
+      d.atl.toString(),
+      d.tsb.toString(),
+      `${d.tsbPercent}%`
+    ]);
+
+    autoTable(doc, {
+      head: [["Tanggal", "RPE", "Durasi", "Load", "CTL", "ATL", "TSB", "Form %"]],
+      body: tableData,
+      startY: 115,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [79, 70, 229] },
+    });
+
+    // AI Analysis if available
+    if (aiAnalysis) {
+      const finalY = (doc as any).lastAutoTable.finalY || 115;
+      doc.setFontSize(12);
+      doc.text("Analisis AI:", 14, finalY + 15);
+      doc.setFontSize(9);
+      
+      const splitText = doc.splitTextToSize(aiAnalysis, 180);
+      doc.text(splitText, 14, finalY + 25);
+    }
+
+    doc.save(`fitness-fatigue-form_${athleteName || "athlete"}_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+    toast.success("Data berhasil diekspor ke PDF");
   };
 
   return (
@@ -205,42 +361,66 @@ export const FitnessFatigueFormChart = ({ sessions, athleteName, readinessStats 
             </div>
           </div>
           
-          {/* Date Range Filter */}
-          <div className="flex flex-col md:flex-row items-start md:items-end gap-4 p-4 bg-secondary/30 rounded-lg">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" />
-              <span className="text-foreground font-medium">Filter Rentang Tanggal:</span>
-            </div>
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="startDate" className="text-muted-foreground text-xs">Dari Tanggal</Label>
-                <Input 
-                  id="startDate"
-                  type="date" 
-                  value={startDate} 
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-[160px] bg-background border-border"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="endDate" className="text-muted-foreground text-xs">Sampai Tanggal</Label>
-                <Input 
-                  id="endDate"
-                  type="date" 
-                  value={endDate} 
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-[160px] bg-background border-border"
-                />
-              </div>
-              {(startDate || endDate) && (
-                <Button variant="outline" size="sm" onClick={handleClearFilter}>
-                  Reset
+          {/* Date Range Filter with Presets */}
+          <div className="flex flex-col gap-3 p-4 bg-secondary/30 rounded-lg">
+            {/* Preset Buttons */}
+            <div className="flex flex-wrap gap-2">
+              {DATE_PRESETS.map((preset) => (
+                <Button
+                  key={preset.value}
+                  variant={datePreset === preset.value ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleDatePreset(preset.value)}
+                  className="text-xs"
+                >
+                  {preset.label}
                 </Button>
-              )}
+              ))}
+            </div>
+            
+            {/* Custom Date Range */}
+            <div className="flex flex-col md:flex-row items-start md:items-end gap-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-primary" />
+                <span className="text-foreground font-medium text-sm">Custom:</span>
+              </div>
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="startDate" className="text-muted-foreground text-xs">Dari Tanggal</Label>
+                  <Input 
+                    id="startDate"
+                    type="date" 
+                    value={startDate} 
+                    onChange={(e) => {
+                      setStartDate(e.target.value);
+                      setDatePreset("custom");
+                    }}
+                    className="w-[160px] bg-background border-border"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="endDate" className="text-muted-foreground text-xs">Sampai Tanggal</Label>
+                  <Input 
+                    id="endDate"
+                    type="date" 
+                    value={endDate} 
+                    onChange={(e) => {
+                      setEndDate(e.target.value);
+                      setDatePreset("custom");
+                    }}
+                    className="w-[160px] bg-background border-border"
+                  />
+                </div>
+                {(startDate || endDate) && (
+                  <Button variant="outline" size="sm" onClick={handleClearFilter}>
+                    Reset
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Date selector and AI Analysis button */}
+          {/* Actions Row */}
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground text-sm">Pilih Tanggal Analisis:</span>
@@ -258,6 +438,7 @@ export const FitnessFatigueFormChart = ({ sessions, athleteName, readinessStats 
                 </SelectContent>
               </Select>
             </div>
+            
             <Button 
               onClick={handleAnalyze} 
               disabled={isAnalyzing || !selectedData}
@@ -275,6 +456,18 @@ export const FitnessFatigueFormChart = ({ sessions, athleteName, readinessStats 
                 </>
               )}
             </Button>
+
+            {/* Export Buttons */}
+            <div className="flex gap-2 ml-auto">
+              <Button variant="outline" size="sm" onClick={exportToCSV} disabled={chartData.length === 0}>
+                <Download className="h-4 w-4 mr-2" />
+                CSV
+              </Button>
+              <Button variant="outline" size="sm" onClick={exportToPDF} disabled={chartData.length === 0}>
+                <FileText className="h-4 w-4 mr-2" />
+                PDF
+              </Button>
+            </div>
           </div>
         </div>
       </CardHeader>
