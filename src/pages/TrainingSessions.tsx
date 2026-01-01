@@ -181,150 +181,151 @@ const TrainingSessions = () => {
           </Card>
 
           {/* Training Sessions Content */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  Sesi Latihan
-                  {selectedAthlete && ` - ${selectedAthlete.name}`}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {selectedAthleteId ? (
-                  <>
-                    {/* Filters */}
-                    <div className="mb-4 space-y-3">
-                      <div className="flex items-center gap-2">
-                        <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
-                        <Select value={sessionSortBy} onValueChange={(v: any) => setSessionSortBy(v)}>
-                          <SelectTrigger className="w-[180px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="date">Terbaru</SelectItem>
-                            <SelectItem value="rpe">RPE Tertinggi</SelectItem>
-                            <SelectItem value="duration">Durasi Terpanjang</SelectItem>
-                          </SelectContent>
-                        </Select>
+          <div className="lg:col-span-2">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              {/* Sesi Latihan */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    Sesi Latihan
+                    {selectedAthlete && ` - ${selectedAthlete.name}`}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {selectedAthleteId ? (
+                    <>
+                      {/* Filters */}
+                      <div className="mb-4 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                          <Select value={sessionSortBy} onValueChange={(v: any) => setSessionSortBy(v)}>
+                            <SelectTrigger className="w-[180px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="date">Terbaru</SelectItem>
+                              <SelectItem value="rpe">RPE Tertinggi</SelectItem>
+                              <SelectItem value="duration">Durasi Terpanjang</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Label className="text-sm">Filter RPE:</Label>
+                          <Select value={sessionFilterRPE} onValueChange={setSessionFilterRPE}>
+                            <SelectTrigger className="w-[180px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Semua RPE</SelectItem>
+                              <SelectItem value="1-3">Rendah (1-3)</SelectItem>
+                              <SelectItem value="4-6">Sedang (4-6)</SelectItem>
+                              <SelectItem value="7-10">Tinggi (7-10)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Label className="text-sm">Filter RPE:</Label>
-                        <Select value={sessionFilterRPE} onValueChange={setSessionFilterRPE}>
-                          <SelectTrigger className="w-[180px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Semua RPE</SelectItem>
-                            <SelectItem value="1-3">Rendah (1-3)</SelectItem>
-                            <SelectItem value="4-6">Sedang (4-6)</SelectItem>
-                            <SelectItem value="7-10">Tinggi (7-10)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
 
-                    {/* Add Session Form */}
-                    <form onSubmit={handleAddSession} className="space-y-4 mb-6 p-4 border rounded-lg bg-muted/50">
-                      <h3 className="font-semibold">Tambah Sesi Latihan</h3>
-                      <div>
-                        <Label htmlFor="date">Tanggal Sesi</Label>
-                        <Input
-                          id="date"
-                          type="date"
-                          value={sessionForm.sessionDate}
-                          onChange={(e) => setSessionForm({ ...sessionForm, sessionDate: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
+                      {/* Add Session Form */}
+                      <form onSubmit={handleAddSession} className="space-y-4 mb-6 p-4 border rounded-lg bg-muted/50">
+                        <h3 className="font-semibold">Tambah Sesi Latihan</h3>
                         <div>
-                          <Label htmlFor="duration">Durasi (menit)</Label>
+                          <Label htmlFor="date">Tanggal Sesi</Label>
                           <Input
-                            id="duration"
-                            type="number"
-                            value={sessionForm.durationMinutes}
-                            onChange={(e) => setSessionForm({ ...sessionForm, durationMinutes: e.target.value })}
+                            id="date"
+                            type="date"
+                            value={sessionForm.sessionDate}
+                            onChange={(e) => setSessionForm({ ...sessionForm, sessionDate: e.target.value })}
                             required
                           />
                         </div>
-                        <div>
-                          <Label htmlFor="rpe">RPE (1-10)</Label>
-                          <Input
-                            id="rpe"
-                            type="number"
-                            min="1"
-                            max="10"
-                            value={sessionForm.rpe}
-                            onChange={(e) => setSessionForm({ ...sessionForm, rpe: e.target.value })}
-                            required
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <Label htmlFor="notes">Catatan</Label>
-                        <Textarea
-                          id="notes"
-                          value={sessionForm.notes}
-                          onChange={(e) => setSessionForm({ ...sessionForm, notes: e.target.value })}
-                        />
-                      </div>
-                      <Button type="submit" disabled={sessionsLoading}>
-                        {sessionsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Tambah Sesi
-                      </Button>
-                    </form>
-
-                    {/* Sessions List */}
-                    <div className="space-y-2">
-                      {sessionsLoading ? (
-                        <div className="flex justify-center p-4">
-                          <Loader2 className="h-6 w-6 animate-spin" />
-                        </div>
-                      ) : athleteSessions.length === 0 ? (
-                        <p className="text-muted-foreground text-center p-4">Belum ada sesi latihan</p>
-                      ) : (
-                        athleteSessions.map((session) => (
-                          <div key={session.id} className="p-4 border rounded-lg">
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <p className="font-semibold">
-                                  {new Date(session.session_date).toLocaleDateString('id-ID', {
-                                    weekday: 'long',
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric',
-                                  })}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  Durasi: {session.duration_minutes} menit | RPE: {session.rpe}/10
-                                </p>
-                                {session.notes && (
-                                  <p className="text-sm mt-2">{session.notes}</p>
-                                )}
-                              </div>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => deleteSession(session.id)}
-                              >
-                                Hapus
-                              </Button>
-                            </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label htmlFor="duration">Durasi (menit)</Label>
+                            <Input
+                              id="duration"
+                              type="number"
+                              value={sessionForm.durationMinutes}
+                              onChange={(e) => setSessionForm({ ...sessionForm, durationMinutes: e.target.value })}
+                              required
+                            />
                           </div>
-                        ))
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <p className="text-muted-foreground text-center p-8">
-                    Pilih atlet untuk melihat dan menambah sesi latihan
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+                          <div>
+                            <Label htmlFor="rpe">RPE (1-10)</Label>
+                            <Input
+                              id="rpe"
+                              type="number"
+                              min="1"
+                              max="10"
+                              value={sessionForm.rpe}
+                              onChange={(e) => setSessionForm({ ...sessionForm, rpe: e.target.value })}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="notes">Catatan</Label>
+                          <Textarea
+                            id="notes"
+                            value={sessionForm.notes}
+                            onChange={(e) => setSessionForm({ ...sessionForm, notes: e.target.value })}
+                          />
+                        </div>
+                        <Button type="submit" disabled={sessionsLoading}>
+                          {sessionsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Tambah Sesi
+                        </Button>
+                      </form>
 
-            {/* Athlete Readiness Input */}
-            {selectedAthleteId && (
+                      {/* Sessions List */}
+                      <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                        {sessionsLoading ? (
+                          <div className="flex justify-center p-4">
+                            <Loader2 className="h-6 w-6 animate-spin" />
+                          </div>
+                        ) : athleteSessions.length === 0 ? (
+                          <p className="text-muted-foreground text-center p-4">Belum ada sesi latihan</p>
+                        ) : (
+                          athleteSessions.map((session) => (
+                            <div key={session.id} className="p-4 border rounded-lg">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <p className="font-semibold">
+                                    {new Date(session.session_date).toLocaleDateString('id-ID', {
+                                      weekday: 'long',
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric',
+                                    })}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Durasi: {session.duration_minutes} menit | RPE: {session.rpe}/10
+                                  </p>
+                                  {session.notes && (
+                                    <p className="text-sm mt-2">{session.notes}</p>
+                                  )}
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => deleteSession(session.id)}
+                                >
+                                  Hapus
+                                </Button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground text-center p-8">
+                      Pilih atlet untuk melihat dan menambah sesi latihan
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Athlete Readiness Input - Di Samping */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -333,46 +334,50 @@ const TrainingSessions = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                      <Label htmlFor="readiness-date">Tanggal</Label>
-                      <Input
-                        id="readiness-date"
-                        type="date"
-                        value={readinessForm.readinessDate}
-                        onChange={(e) => setReadinessForm({ ...readinessForm, readinessDate: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="rhr">Resting Heart Rate (bpm)</Label>
-                      <Input
-                        id="rhr"
-                        type="number"
-                        placeholder="60"
-                        value={readinessForm.restingHeartRate}
-                        onChange={(e) => setReadinessForm({ ...readinessForm, restingHeartRate: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="vj">Vertical Jump (cm)</Label>
-                      <Input
-                        id="vj"
-                        type="number"
-                        step="0.1"
-                        placeholder="50"
-                        value={readinessForm.verticalJump}
-                        onChange={(e) => setReadinessForm({ ...readinessForm, verticalJump: e.target.value })}
-                      />
-                    </div>
-                    <div className="flex items-end">
+                  {selectedAthleteId ? (
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="readiness-date">Tanggal</Label>
+                        <Input
+                          id="readiness-date"
+                          type="date"
+                          value={readinessForm.readinessDate}
+                          onChange={(e) => setReadinessForm({ ...readinessForm, readinessDate: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="rhr">Resting Heart Rate (bpm)</Label>
+                        <Input
+                          id="rhr"
+                          type="number"
+                          placeholder="60"
+                          value={readinessForm.restingHeartRate}
+                          onChange={(e) => setReadinessForm({ ...readinessForm, restingHeartRate: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="vj">Vertical Jump (cm)</Label>
+                        <Input
+                          id="vj"
+                          type="number"
+                          step="0.1"
+                          placeholder="50"
+                          value={readinessForm.verticalJump}
+                          onChange={(e) => setReadinessForm({ ...readinessForm, verticalJump: e.target.value })}
+                        />
+                      </div>
                       <Button onClick={handleAddReadiness} className="w-full">
                         Tambah Data Kesiapan
                       </Button>
                     </div>
-                  </div>
+                  ) : (
+                    <p className="text-muted-foreground text-center p-8">
+                      Pilih atlet untuk menambah data kesiapan
+                    </p>
+                  )}
                 </CardContent>
               </Card>
-            )}
+            </div>
           </div>
         </div>
       </div>
