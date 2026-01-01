@@ -43,6 +43,12 @@ export const athleteSchema = z.object({
     .url({ message: "URL avatar tidak valid" })
     .optional()
     .nullable(),
+  sports_branch: z
+    .string()
+    .trim()
+    .max(100, { message: "Cabang olahraga maksimal 100 karakter" })
+    .optional()
+    .nullable(),
 });
 
 // Training session validation

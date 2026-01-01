@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, BarChart3, ArrowUpDown, Heart, User, Users } from "lucide-react";
+import { Loader2, BarChart3, ArrowUpDown, Heart, User, Users, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 
@@ -113,7 +113,12 @@ const TrainingSessions = () => {
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-6xl mx-auto">
         <header className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-foreground">Training Sessions</h1>
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="icon" onClick={() => navigate("/app")}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-4xl font-bold text-foreground">Training Sessions</h1>
+          </div>
           <div className="flex gap-2">
             <Button onClick={() => navigate("/profile")} variant="outline">
               <Users className="mr-2 h-4 w-4" />
