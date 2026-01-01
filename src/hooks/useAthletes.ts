@@ -86,7 +86,10 @@ export function useAthletes() {
       
       const { data, error } = await supabase
         .from("athletes")
-        .update(validatedData)
+        .update({
+          ...validatedData,
+          avatar_url: athlete.avatar_url, // Include avatar_url explicitly
+        })
         .eq("id", id)
         .select()
         .single();
@@ -96,7 +99,6 @@ export function useAthletes() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["athletes"] });
-      toast.success("Atlet berhasil diperbarui");
     },
     onError: (error: any) => {
       if (error.name === "ZodError") {

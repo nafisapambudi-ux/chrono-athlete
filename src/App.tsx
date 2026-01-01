@@ -9,6 +9,8 @@ import Landing from "./pages/Landing";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
+import TrainingSessions from "./pages/TrainingSessions";
 import AthleteComparison from "./pages/AthleteComparison";
 import NotFound from "./pages/NotFound";
 
@@ -26,6 +28,8 @@ export default function App() {
             <Route path="/app" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/training" element={<TrainingSessions />} />
             <Route path="/comparison" element={<AthleteComparison />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
