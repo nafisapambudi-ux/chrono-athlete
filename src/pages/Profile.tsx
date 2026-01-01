@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, ArrowUpDown, User, Pencil, BarChart3, Dumbbell } from "lucide-react";
+import { Loader2, Search, ArrowUpDown, User, Pencil, BarChart3, Dumbbell, ArrowLeft, Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AthleteEditDialog } from "@/components/AthleteEditDialog";
 
@@ -27,6 +27,7 @@ const Profile = () => {
     bodyHeight: "",
     mass: "",
     verticalJump: "",
+    sportsBranch: "",
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -94,9 +95,10 @@ const Profile = () => {
       mass: athleteForm.mass ? Number(athleteForm.mass) : undefined,
       vertical_jump: athleteForm.verticalJump ? Number(athleteForm.verticalJump) : undefined,
       avatar_url: avatarUrl,
+      sports_branch: athleteForm.sportsBranch || undefined,
     });
     
-    setAthleteForm({ name: "", bodyHeight: "", mass: "", verticalJump: "" });
+    setAthleteForm({ name: "", bodyHeight: "", mass: "", verticalJump: "", sportsBranch: "" });
     setAvatarFile(null);
     setAvatarPreview(null);
     setIsUploading(false);
@@ -118,7 +120,12 @@ const Profile = () => {
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-4xl mx-auto">
         <header className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-foreground">Profil Atlet</h1>
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="icon" onClick={() => navigate("/app")}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-4xl font-bold text-foreground">Profil Atlet</h1>
+          </div>
           <div className="flex gap-2">
             <Button onClick={() => navigate("/training")} variant="outline">
               <Dumbbell className="mr-2 h-4 w-4" />
@@ -229,6 +236,15 @@ const Profile = () => {
                   />
                 </div>
               </div>
+              <div>
+                <Label htmlFor="sportsBranch">Cabang Olahraga</Label>
+                <Input
+                  id="sportsBranch"
+                  placeholder="Contoh: Bola Voli, Sepak Bola, dll"
+                  value={athleteForm.sportsBranch}
+                  onChange={(e) => setAthleteForm({ ...athleteForm, sportsBranch: e.target.value })}
+                />
+              </div>
               <Button type="submit" disabled={athletesLoading || isUploading}>
                 {(athletesLoading || isUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Tambah Atlet
@@ -265,7 +281,15 @@ const Profile = () => {
                           </div>
                         )}
                         <div>
-                          <h3 className="font-semibold">{athlete.name}</h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold">{athlete.name}</h3>
+                            {athlete.sports_branch && (
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <Trophy className="h-3 w-3" />
+                                {athlete.sports_branch}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-muted-foreground">
                             {athlete.body_height && `Tinggi: ${athlete.body_height}cm`}
                             {athlete.mass && ` | Berat: ${athlete.mass}kg`}

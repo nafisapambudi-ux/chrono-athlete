@@ -21,6 +21,7 @@ interface Athlete {
   body_height: number | null;
   vertical_jump: number | null;
   avatar_url: string | null;
+  sports_branch: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -39,6 +40,7 @@ export function AthleteEditDialog({ athlete, open, onOpenChange, onUpdate }: Ath
     mass: "",
     body_height: "",
     vertical_jump: "",
+    sports_branch: "",
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -51,6 +53,7 @@ export function AthleteEditDialog({ athlete, open, onOpenChange, onUpdate }: Ath
         mass: athlete.mass?.toString() || "",
         body_height: athlete.body_height?.toString() || "",
         vertical_jump: athlete.vertical_jump?.toString() || "",
+        sports_branch: athlete.sports_branch || "",
       });
       setAvatarPreview(athlete.avatar_url);
       setAvatarFile(null);
@@ -107,6 +110,7 @@ export function AthleteEditDialog({ athlete, open, onOpenChange, onUpdate }: Ath
         body_height: form.body_height ? Number(form.body_height) : null,
         vertical_jump: form.vertical_jump ? Number(form.vertical_jump) : null,
         avatar_url: avatarUrl,
+        sports_branch: form.sports_branch || null,
       });
 
       onOpenChange(false);
@@ -164,6 +168,16 @@ export function AthleteEditDialog({ athlete, open, onOpenChange, onUpdate }: Ath
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="edit-sports-branch">Cabang Olahraga</Label>
+            <Input
+              id="edit-sports-branch"
+              placeholder="Contoh: Bola Voli, Sepak Bola, dll"
+              value={form.sports_branch}
+              onChange={(e) => setForm({ ...form, sports_branch: e.target.value })}
             />
           </div>
 

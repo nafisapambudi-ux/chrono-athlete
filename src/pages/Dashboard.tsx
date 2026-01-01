@@ -6,12 +6,13 @@ import { useAthleteReadiness } from "@/hooks/useAthleteReadiness";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { ArrowLeft, TrendingUp, Calendar, Clock, Activity, Heart, Zap } from "lucide-react";
+import { ArrowLeft, TrendingUp, Calendar, Clock, Activity, Heart, Zap, User } from "lucide-react";
 import { FitnessFatigueFormChart } from "@/components/FitnessFatigueFormChart";
 import { ReadinessStatsCard, getReadinessStatsForAI } from "@/components/ReadinessStatsCard";
+import { AthleteProfileCard } from "@/components/AthleteProfileCard";
+import { ReadinessHistoryTable } from "@/components/ReadinessHistoryTable";
+import { ExportDataButton } from "@/components/ExportDataButton";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO, subDays } from "date-fns";
 import { toast } from "sonner";
@@ -161,6 +162,11 @@ const Dashboard = () => {
             <h1 className="text-4xl font-bold text-foreground">Analytics Dashboard</h1>
           </div>
           <div className="flex items-center gap-2">
+            <ExportDataButton
+              sessions={filteredSessions}
+              athletes={athletes}
+              selectedAthleteId={selectedAthleteId === "all" ? null : selectedAthleteId}
+            />
             <Button onClick={() => navigate("/comparison")} variant="outline">
               Compare Athletes
             </Button>
@@ -183,7 +189,16 @@ const Dashboard = () => {
                   <SelectItem value="all">All Athletes</SelectItem>
                   {athletes.map(athlete => (
                     <SelectItem key={athlete.id} value={athlete.id}>
-                      {athlete.name}
+                      <div className="flex items-center gap-2">
+                        {athlete.avatar_url ? (
+                          <img src={athlete.avatar_url} alt={athlete.name} className="w-6 h-6 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+                            <User className="h-3 w-3 text-muted-foreground" />
+                          </div>
+                        )}
+                        {athlete.name}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -191,6 +206,13 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Athlete Profile Card - Show when specific athlete is selected */}
+        {selectedAthleteId !== "all" && athletes.find(a => a.id === selectedAthleteId) && (
+          <div className="mb-6">
+            <AthleteProfileCard athlete={athletes.find(a => a.id === selectedAthleteId)!} />
+          </div>
+        )}
 
 
         {/* Statistics Cards */}
@@ -296,10 +318,20 @@ const Dashboard = () => {
           </div>
         )}
 
+        {/* Readiness History Table */}
+        {selectedAthleteId !== "all" && filteredReadiness.length > 0 && (
+          <div className="mb-6">
+            <ReadinessHistoryTable
+              readinessData={filteredReadiness}
+              athleteName={athletes.find(a => a.id === selectedAthleteId)?.name}
+            />
+          </div>
+        )}
+
         {/* Fitness-Fatigue-Form Analysis */}
         <div className="mb-6">
           <FitnessFatigueFormChart 
-            sessions={filteredSessions} 
+            sessions={filteredSessions}
             athleteName={selectedAthleteId !== "all" ? athletes.find(a => a.id === selectedAthleteId)?.name : undefined}
             readinessStats={readinessStatsForAI}
           />

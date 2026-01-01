@@ -66,6 +66,7 @@ export type Database = {
           id: string
           mass: number | null
           name: string
+          sports_branch: string | null
           updated_at: string
           user_id: string
           vertical_jump: number | null
@@ -77,6 +78,7 @@ export type Database = {
           id?: string
           mass?: number | null
           name: string
+          sports_branch?: string | null
           updated_at?: string
           user_id: string
           vertical_jump?: number | null
@@ -88,6 +90,7 @@ export type Database = {
           id?: string
           mass?: number | null
           name?: string
+          sports_branch?: string | null
           updated_at?: string
           user_id?: string
           vertical_jump?: number | null

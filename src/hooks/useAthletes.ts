@@ -12,6 +12,7 @@ export interface Athlete {
   body_height: number | null;
   vertical_jump: number | null;
   avatar_url: string | null;
+  sports_branch: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -22,6 +23,7 @@ export interface AthleteInput {
   body_height?: number;
   vertical_jump?: number;
   avatar_url?: string;
+  sports_branch?: string;
 }
 
 export function useAthletes() {
@@ -58,6 +60,7 @@ export function useAthletes() {
           body_height: validatedData.body_height,
           vertical_jump: validatedData.vertical_jump,
           avatar_url: athlete.avatar_url,
+          sports_branch: athlete.sports_branch,
           user_id: user.id,
         })
         .select()
@@ -88,7 +91,8 @@ export function useAthletes() {
         .from("athletes")
         .update({
           ...validatedData,
-          avatar_url: athlete.avatar_url, // Include avatar_url explicitly
+          avatar_url: athlete.avatar_url,
+          sports_branch: athlete.sports_branch,
         })
         .eq("id", id)
         .select()
