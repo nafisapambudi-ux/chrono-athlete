@@ -155,7 +155,7 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto">
         <header className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={() => navigate("/")}>
+            <Button variant="outline" size="icon" onClick={() => navigate("/app")}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <h1 className="text-4xl font-bold text-foreground">Analytics Dashboard</h1>
