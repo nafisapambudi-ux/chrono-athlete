@@ -120,6 +120,103 @@ export type Database = {
         }
         Relationships: []
       }
+      program_exercises: {
+        Row: {
+          created_at: string
+          exercise_name: string
+          exercise_type: string
+          id: string
+          load_value: string | null
+          order_index: number
+          program_id: string
+          reps: number | null
+          sets: number | null
+        }
+        Insert: {
+          created_at?: string
+          exercise_name: string
+          exercise_type?: string
+          id?: string
+          load_value?: string | null
+          order_index?: number
+          program_id: string
+          reps?: number | null
+          sets?: number | null
+        }
+        Update: {
+          created_at?: string
+          exercise_name?: string
+          exercise_type?: string
+          id?: string
+          load_value?: string | null
+          order_index?: number
+          program_id?: string
+          reps?: number | null
+          sets?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_exercises_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "training_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_programs: {
+        Row: {
+          athlete_id: string
+          completed_duration_minutes: number | null
+          completed_rpe: number | null
+          cooling_down: string | null
+          created_at: string
+          id: string
+          is_completed: boolean
+          notes: string | null
+          program_date: string
+          program_type: string
+          updated_at: string
+          warm_up: string | null
+        }
+        Insert: {
+          athlete_id: string
+          completed_duration_minutes?: number | null
+          completed_rpe?: number | null
+          cooling_down?: string | null
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          notes?: string | null
+          program_date: string
+          program_type?: string
+          updated_at?: string
+          warm_up?: string | null
+        }
+        Update: {
+          athlete_id?: string
+          completed_duration_minutes?: number | null
+          completed_rpe?: number | null
+          cooling_down?: string | null
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          notes?: string | null
+          program_date?: string
+          program_type?: string
+          updated_at?: string
+          warm_up?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_programs_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "athletes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_sessions: {
         Row: {
           athlete_id: string
