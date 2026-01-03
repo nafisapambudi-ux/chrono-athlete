@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAthletes, Athlete } from "@/hooks/useAthletes";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,14 +9,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, ArrowUpDown, User, Pencil, BarChart3, Dumbbell, ArrowLeft, Trophy } from "lucide-react";
+import { Loader2, Search, ArrowUpDown, User, Pencil, BarChart3, Dumbbell, ArrowLeft, Trophy, Link2, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AthleteEditDialog } from "@/components/AthleteEditDialog";
+import { LinkAthleteDialog } from "@/components/LinkAthleteDialog";
 
 const Profile = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { athletes, isLoading: athletesLoading, createAthlete, updateAthlete, deleteAthlete } = useAthletes();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
 
   // Filter and sort states
@@ -37,9 +40,22 @@ const Profile = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingAthlete, setEditingAthlete] = useState<Athlete | null>(null);
 
+  // Link dialog state
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkingAthlete, setLinkingAthlete] = useState<Athlete | null>(null);
+
   const handleEditAthlete = (athlete: Athlete) => {
     setEditingAthlete(athlete);
     setEditDialogOpen(true);
+  };
+
+  const handleLinkAthlete = (athlete: Athlete) => {
+    setLinkingAthlete(athlete);
+    setLinkDialogOpen(true);
+  };
+
+  const handleLinkSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ["athletes"] });
   };
 
   // Filtered and sorted athletes
@@ -300,6 +316,18 @@ const Profile = () => {
                       <div className="flex gap-2">
                         <Button
                           size="sm"
+                          variant={athlete.linked_user_id ? "default" : "outline"}
+                          onClick={() => handleLinkAthlete(athlete)}
+                          title={athlete.linked_user_id ? "Sudah terhubung" : "Hubungkan ke akun"}
+                        >
+                          {athlete.linked_user_id ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            <Link2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
                           variant="outline"
                           onClick={() => handleEditAthlete(athlete)}
                         >
@@ -327,6 +355,14 @@ const Profile = () => {
           open={editDialogOpen}
           onOpenChange={setEditDialogOpen}
           onUpdate={updateAthlete}
+        />
+
+        {/* Link Athlete Dialog */}
+        <LinkAthleteDialog
+          athlete={linkingAthlete}
+          open={linkDialogOpen}
+          onOpenChange={setLinkDialogOpen}
+          onSuccess={handleLinkSuccess}
         />
       </div>
     </div>

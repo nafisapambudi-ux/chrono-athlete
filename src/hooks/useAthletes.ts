@@ -13,6 +13,7 @@ export interface Athlete {
   vertical_jump: number | null;
   avatar_url: string | null;
   sports_branch: string | null;
+  linked_user_id: string | null;
   created_at: string;
   updated_at: string;
 }
