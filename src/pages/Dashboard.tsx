@@ -3,6 +3,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAthletes } from "@/hooks/useAthletes";
 import { useTrainingSessions } from "@/hooks/useTrainingSessions";
 import { useAthleteReadiness } from "@/hooks/useAthleteReadiness";
+import { useTrainingStats } from "@/hooks/useTrainingStats";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,6 +14,8 @@ import { FitnessFatigueFormChart } from "@/components/FitnessFatigueFormChart";
 import { ReadinessStatsCard, getReadinessStatsForAI } from "@/components/ReadinessStatsCard";
 import { AthleteProfileCard } from "@/components/AthleteProfileCard";
 import { ReadinessHistoryTable } from "@/components/ReadinessHistoryTable";
+import { TrainingStatsCards } from "@/components/TrainingStatsCards";
+import { RoleBadge } from "@/components/RoleBadge";
 import { ExportDataButton } from "@/components/ExportDataButton";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO, subDays } from "date-fns";
@@ -35,7 +39,16 @@ const Dashboard = () => {
   const { athletes } = useAthletes();
   const { sessions } = useTrainingSessions();
   const { readinessData } = useAthleteReadiness();
+  const { data: roles } = useUserRole(user?.id);
   const [selectedAthleteId, setSelectedAthleteId] = useState<string>("all");
+  
+  const isCoach = roles?.includes("coach") || roles?.includes("owner");
+  const isAthlete = roles?.includes("athlete");
+
+  // Get training stats for the selected athlete or all
+  const { data: trainingStats, isLoading: statsLoading } = useTrainingStats(
+    selectedAthleteId === "all" ? null : selectedAthleteId
+  );
 
   if (!user) {
     window.location.href = "/auth";
@@ -159,7 +172,16 @@ const Dashboard = () => {
             <Button variant="outline" size="icon" onClick={() => navigate("/app")}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <h1 className="text-4xl font-bold text-foreground">Analytics Dashboard</h1>
+            <div>
+              <h1 className="text-4xl font-bold text-foreground">Analytics Dashboard</h1>
+              {roles && roles.length > 0 && (
+                <div className="flex gap-2 mt-1">
+                  {roles.map((role) => (
+                    <RoleBadge key={role} role={role} />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <ExportDataButton
@@ -177,35 +199,46 @@ const Dashboard = () => {
         </header>
 
         {/* Filter */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <label className="text-sm font-medium">Filter by Athlete:</label>
-              <Select value={selectedAthleteId} onValueChange={setSelectedAthleteId}>
-                <SelectTrigger className="w-[250px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Athletes</SelectItem>
-                  {athletes.map(athlete => (
-                    <SelectItem key={athlete.id} value={athlete.id}>
-                      <div className="flex items-center gap-2">
-                        {athlete.avatar_url ? (
-                          <img src={athlete.avatar_url} alt={athlete.name} className="w-6 h-6 rounded-full object-cover" />
-                        ) : (
-                          <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
-                            <User className="h-3 w-3 text-muted-foreground" />
-                          </div>
-                        )}
-                        {athlete.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Training Stats Cards */}
+        {trainingStats && (
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-foreground mb-4">Statistik Latihan</h2>
+            <TrainingStatsCards stats={trainingStats} isLoading={statsLoading} />
+          </div>
+        )}
+
+        {/* Filter - Only show for coaches */}
+        {isCoach && athletes.length > 1 && (
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <label className="text-sm font-medium">Filter by Athlete:</label>
+                <Select value={selectedAthleteId} onValueChange={setSelectedAthleteId}>
+                  <SelectTrigger className="w-[250px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Athletes</SelectItem>
+                    {athletes.map(athlete => (
+                      <SelectItem key={athlete.id} value={athlete.id}>
+                        <div className="flex items-center gap-2">
+                          {athlete.avatar_url ? (
+                            <img src={athlete.avatar_url} alt={athlete.name} className="w-6 h-6 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+                              <User className="h-3 w-3 text-muted-foreground" />
+                            </div>
+                          )}
+                          {athlete.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Athlete Profile Card - Show when specific athlete is selected */}
         {selectedAthleteId !== "all" && athletes.find(a => a.id === selectedAthleteId) && (
@@ -213,7 +246,6 @@ const Dashboard = () => {
             <AthleteProfileCard athlete={athletes.find(a => a.id === selectedAthleteId)!} />
           </div>
         )}
-
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-8">

@@ -4,13 +4,19 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { authSchema } from "@/lib/validationSchemas";
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+type AppRole = Database["public"]["Enums"]["app_role"];
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [selectedRole, setSelectedRole] = useState<AppRole>("athlete");
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
@@ -26,17 +32,38 @@ export default function Auth() {
       if (isLogin) {
         await signIn(validatedData.email, validatedData.password);
         toast.success("Berhasil masuk!");
+        navigate("/app");
       } else {
         await signUp(validatedData.email, validatedData.password);
-        toast.success("Akun berhasil dibuat! Silakan masuk.");
-        setIsLogin(true);
+        
+        // Wait a moment for the user to be created, then get the session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          // Assign the selected role to the new user
+          const { error: roleError } = await supabase
+            .from("user_roles")
+            .insert({
+              user_id: session.user.id,
+              role: selectedRole,
+            });
+
+          if (roleError) {
+            console.error("Error assigning role:", roleError);
+          }
+        }
+        
+        toast.success("Akun berhasil dibuat!");
+        navigate("/app");
       }
-      navigate("/app");
     } catch (error: any) {
       if (error.name === "ZodError") {
         toast.error(error.errors[0]?.message || "Data tidak valid");
+      } else if (error.message?.includes("User already registered")) {
+        toast.error("Email sudah terdaftar. Silakan login.");
+        setIsLogin(true);
       } else {
-        toast.error("Terjadi kesalahan. Silakan coba lagi");
+        toast.error(error.message || "Terjadi kesalahan. Silakan coba lagi");
       }
     } finally {
       setLoading(false);
@@ -74,7 +101,7 @@ export default function Auth() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="bg-slate-800 border-slate-700 text-slate-100"
-                placeholder="coach@example.com"
+                placeholder="email@example.com"
               />
             </div>
 
@@ -93,6 +120,38 @@ export default function Auth() {
                 minLength={6}
               />
             </div>
+
+            {!isLogin && (
+              <div>
+                <Label htmlFor="role" className="text-slate-300">
+                  Daftar Sebagai
+                </Label>
+                <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as AppRole)}>
+                  <SelectTrigger id="role" className="bg-slate-800 border-slate-700 text-slate-100">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="coach">
+                      <div className="flex items-center gap-2">
+                        <span>🏋️</span>
+                        <span>Pelatih (Coach)</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="athlete">
+                      <div className="flex items-center gap-2">
+                        <span>🏃</span>
+                        <span>Atlet</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-slate-500 mt-1">
+                  {selectedRole === "coach" 
+                    ? "Pelatih dapat membuat dan mengelola program latihan untuk banyak atlet"
+                    : "Atlet dapat melihat dan menyelesaikan program latihan yang diberikan pelatih"}
+                </p>
+              </div>
+            )}
 
             <Button
               type="submit"

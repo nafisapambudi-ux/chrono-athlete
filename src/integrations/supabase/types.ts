@@ -64,6 +64,7 @@ export type Database = {
           body_height: number | null
           created_at: string
           id: string
+          linked_user_id: string | null
           mass: number | null
           name: string
           sports_branch: string | null
@@ -76,6 +77,7 @@ export type Database = {
           body_height?: number | null
           created_at?: string
           id?: string
+          linked_user_id?: string | null
           mass?: number | null
           name: string
           sports_branch?: string | null
@@ -88,6 +90,7 @@ export type Database = {
           body_height?: number | null
           created_at?: string
           id?: string
+          linked_user_id?: string | null
           mass?: number | null
           name?: string
           sports_branch?: string | null
