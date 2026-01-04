@@ -198,27 +198,18 @@ const Dashboard = () => {
           </div>
         </header>
 
-        {/* Filter */}
-        {/* Training Stats Cards */}
-        {trainingStats && (
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-foreground mb-4">Statistik Latihan</h2>
-            <TrainingStatsCards stats={trainingStats} isLoading={statsLoading} />
-          </div>
-        )}
-
-        {/* Filter - Only show for coaches */}
-        {isCoach && athletes.length > 1 && (
+        {/* Filter - Show for coaches at top */}
+        {isCoach && athletes.length > 0 && (
           <Card className="mb-6">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <label className="text-sm font-medium">Filter by Athlete:</label>
+                <label className="text-sm font-medium">Pilih Atlet:</label>
                 <Select value={selectedAthleteId} onValueChange={setSelectedAthleteId}>
-                  <SelectTrigger className="w-[250px]">
-                    <SelectValue />
+                  <SelectTrigger className="w-[300px]">
+                    <SelectValue placeholder="Pilih atlet untuk melihat data" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Athletes</SelectItem>
+                    <SelectItem value="all">Semua Atlet</SelectItem>
                     {athletes.map(athlete => (
                       <SelectItem key={athlete.id} value={athlete.id}>
                         <div className="flex items-center gap-2">
@@ -229,7 +220,10 @@ const Dashboard = () => {
                               <User className="h-3 w-3 text-muted-foreground" />
                             </div>
                           )}
-                          {athlete.name}
+                          <span>{athlete.name}</span>
+                          {athlete.sports_branch && (
+                            <span className="text-muted-foreground text-xs">({athlete.sports_branch})</span>
+                          )}
                         </div>
                       </SelectItem>
                     ))}
@@ -240,10 +234,66 @@ const Dashboard = () => {
           </Card>
         )}
 
-        {/* Athlete Profile Card - Show when specific athlete is selected */}
+        {/* Athlete Profile Card with Training Stats - Show when specific athlete is selected */}
         {selectedAthleteId !== "all" && athletes.find(a => a.id === selectedAthleteId) && (
-          <div className="mb-6">
+          <div className="mb-6 space-y-4">
             <AthleteProfileCard athlete={athletes.find(a => a.id === selectedAthleteId)!} />
+            {trainingStats && (
+              <div>
+                <h3 className="text-lg font-semibold text-foreground mb-3">Statistik Latihan {athletes.find(a => a.id === selectedAthleteId)?.name}</h3>
+                <TrainingStatsCards stats={trainingStats} isLoading={statsLoading} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* All Athletes Overview - Show when "all" is selected */}
+        {selectedAthleteId === "all" && athletes.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-foreground mb-4">Daftar Atlet</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {athletes.map(athlete => (
+                <Card 
+                  key={athlete.id} 
+                  className="cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => setSelectedAthleteId(athlete.id)}
+                >
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-3">
+                      {athlete.avatar_url ? (
+                        <img
+                          src={athlete.avatar_url}
+                          alt={athlete.name}
+                          className="w-12 h-12 rounded-full object-cover border-2 border-primary/30"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center border-2 border-border">
+                          <User className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-foreground truncate">{athlete.name}</h4>
+                        {athlete.sports_branch && (
+                          <p className="text-sm text-muted-foreground">{athlete.sports_branch}</p>
+                        )}
+                        <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                          {athlete.body_height && <span>{athlete.body_height} cm</span>}
+                          {athlete.mass && <span>{athlete.mass} kg</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Global Training Stats - Show when all is selected */}
+        {selectedAthleteId === "all" && trainingStats && (
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-foreground mb-4">Statistik Latihan Keseluruhan</h2>
+            <TrainingStatsCards stats={trainingStats} isLoading={statsLoading} />
           </div>
         )}
 
