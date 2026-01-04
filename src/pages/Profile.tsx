@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, ArrowUpDown, User, Pencil, BarChart3, Dumbbell, ArrowLeft, Trophy, Link2, Check } from "lucide-react";
+import { Loader2, Search, ArrowUpDown, User, Pencil, BarChart3, Dumbbell, ArrowLeft, Trophy, Link2, Check, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AthleteEditDialog } from "@/components/AthleteEditDialog";
 import { LinkAthleteDialog } from "@/components/LinkAthleteDialog";
@@ -314,6 +314,14 @@ const Profile = () => {
                         </div>
                       </div>
                       <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => navigate(`/athlete/${athlete.id}`)}
+                          title="Lihat Detail"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         <Button
                           size="sm"
                           variant={athlete.linked_user_id ? "default" : "outline"}
