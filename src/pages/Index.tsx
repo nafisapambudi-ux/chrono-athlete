@@ -59,22 +59,39 @@ const Index = () => {
               </Card>
             )}
 
-            {/* Training Sessions - Available for both roles */}
-            <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate("/training")}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Dumbbell className="h-6 w-6" />
-                  {isCoach ? "Program Latihan" : "Latihan Saya"}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  {isCoach 
-                    ? "Buat dan kelola program latihan untuk atlet."
-                    : "Lihat dan selesaikan program latihan Anda."}
-                </p>
-              </CardContent>
-            </Card>
+            {/* Athlete's Own Dashboard - Athletes only */}
+            {isAthlete && (
+              <Card className="cursor-pointer hover:bg-muted/50 transition-colors border-primary/50" onClick={() => navigate("/my-training")}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Dumbbell className="h-6 w-6 text-primary" />
+                    Latihan Saya
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    Lihat program latihan, progres, dan perkembangan performa Anda.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Training Sessions - Coaches only */}
+            {isCoach && (
+              <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate("/training")}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Dumbbell className="h-6 w-6" />
+                    Program Latihan
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    Buat dan kelola program latihan untuk atlet.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Dashboard - Available for both roles */}
             <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate("/dashboard")}>
