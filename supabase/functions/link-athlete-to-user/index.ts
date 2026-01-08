@@ -113,7 +113,7 @@ serve(async (req) => {
       );
     }
 
-    // Check if the target user has athlete role
+    // Check if the target user has athlete role, if not add it
     const { data: targetRoles } = await supabaseAdmin
       .from("user_roles")
       .select("role")
@@ -121,10 +121,19 @@ serve(async (req) => {
 
     const isAthlete = targetRoles?.some(r => r.role === "athlete");
     if (!isAthlete) {
-      return new Response(
-        JSON.stringify({ error: "This user is not registered as an athlete" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      // Auto-add athlete role for the target user
+      const { error: roleError } = await supabaseAdmin
+        .from("user_roles")
+        .insert({ user_id: targetUser.id, role: "athlete" });
+      
+      if (roleError) {
+        console.error("Failed to add athlete role:", roleError);
+        return new Response(
+          JSON.stringify({ error: "Failed to assign athlete role to user" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      console.log(`Added athlete role to user ${targetUser.id}`);
     }
 
     // Check if this user is already linked to another athlete
