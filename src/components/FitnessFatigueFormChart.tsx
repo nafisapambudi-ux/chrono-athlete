@@ -192,6 +192,15 @@ export const FitnessFatigueFormChart = ({ sessions, athleteName, readinessStats 
     setAiAnalysis("");
 
     try {
+      // Get auth session for authenticated request
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        toast.error("Anda harus login untuk menggunakan fitur ini");
+        setIsAnalyzing(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("analyze-athlete-condition", {
         body: {
           fitness: selectedData.ctl,
@@ -202,6 +211,9 @@ export const FitnessFatigueFormChart = ({ sessions, athleteName, readinessStats 
           athleteName: athleteName || "Atlet",
           date: selectedData.date,
           readinessStats: readinessStats,
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
         },
       });
 
