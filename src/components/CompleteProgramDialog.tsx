@@ -16,6 +16,7 @@ import { CheckCircle2, Clock, Dumbbell, Loader2 } from "lucide-react";
 import { TrainingProgram } from "@/hooks/useTrainingPrograms";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { calculateTrainingLoad, RPE_DESCRIPTIONS, RPE_BASE_LOAD } from "@/lib/trainingLoadUtils";
 
 interface CompleteProgramDialogProps {
   program: TrainingProgram | null;
@@ -24,19 +25,6 @@ interface CompleteProgramDialogProps {
   onComplete: (data: { program_id: string; completed_rpe: number; completed_duration_minutes: number }) => void;
   isSubmitting?: boolean;
 }
-
-const RPE_DESCRIPTIONS: Record<number, { label: string; color: string }> = {
-  1: { label: "Sangat Ringan", color: "bg-green-500" },
-  2: { label: "Ringan", color: "bg-green-500" },
-  3: { label: "Sedang", color: "bg-lime-500" },
-  4: { label: "Agak Berat", color: "bg-lime-500" },
-  5: { label: "Berat", color: "bg-yellow-500" },
-  6: { label: "Cukup Berat", color: "bg-yellow-500" },
-  7: { label: "Sangat Berat", color: "bg-orange-500" },
-  8: { label: "Sangat Berat Sekali", color: "bg-orange-500" },
-  9: { label: "Hampir Maksimal", color: "bg-red-500" },
-  10: { label: "Maksimal", color: "bg-red-600" },
-};
 
 export function CompleteProgramDialog({
   program,
@@ -157,10 +145,10 @@ export function CompleteProgramDialog({
             <div className="bg-primary/10 rounded-lg p-4">
               <p className="text-sm font-medium mb-1">Perkiraan Training Load</p>
               <p className="text-2xl font-bold text-primary">
-                {rpe * parseInt(duration || "0")} AU
+                {calculateTrainingLoad(rpe, parseInt(duration || "0"))} TSS
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                RPE ({rpe}) × Durasi ({duration || 0} menit)
+                RPE {rpe} (base: {RPE_BASE_LOAD[rpe]}/60 menit) × {duration || 0} menit
               </p>
             </div>
 
