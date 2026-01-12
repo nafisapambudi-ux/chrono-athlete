@@ -17,6 +17,7 @@ import { ReadinessHistoryTable } from "@/components/ReadinessHistoryTable";
 import { FitnessFatigueFormChart } from "@/components/FitnessFatigueFormChart";
 import { AthleteReadinessForm } from "@/components/AthleteReadinessForm";
 import { CompleteProgramDialog } from "@/components/CompleteProgramDialog";
+import { ProgramDetailDialog } from "@/components/ProgramDetailDialog";
 import TrainingCalendar from "@/components/TrainingCalendar";
 import { TrainingProgram } from "@/hooks/useTrainingPrograms";
 import { 
@@ -29,7 +30,8 @@ import {
   Clock,
   Target,
   Heart,
-  Zap
+  Zap,
+  Eye
 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -46,6 +48,7 @@ export default function AthleteDashboard() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedProgram, setSelectedProgram] = useState<TrainingProgram | null>(null);
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
   const handleCompleteProgram = (data: { program_id: string; completed_rpe: number; completed_duration_minutes: number }) => {
     completeProgram(data, {
@@ -333,11 +336,15 @@ export default function AthleteDashboard() {
                   {todayPrograms.map((program) => (
                     <div 
                       key={program.id}
-                      className={`p-4 rounded-lg border ${
+                      className={`p-4 rounded-lg border cursor-pointer hover:shadow-md transition-all ${
                         program.is_completed 
                           ? "bg-green-500/10 border-green-500/20" 
                           : "bg-orange-500/10 border-orange-500/20"
                       }`}
+                      onClick={() => {
+                        setSelectedProgram(program);
+                        setDetailDialogOpen(true);
+                      }}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -349,12 +356,25 @@ export default function AthleteDashboard() {
                           <span className="font-medium capitalize">{program.program_type}</span>
                         </div>
                         <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedProgram(program);
+                              setDetailDialogOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Detail
+                          </Button>
                           {program.is_completed ? (
                             <Badge variant="default">Selesai</Badge>
                           ) : (
                             <Button
                               size="sm"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setSelectedProgram(program);
                                 setCompleteDialogOpen(true);
                               }}
@@ -406,7 +426,11 @@ export default function AthleteDashboard() {
                     ).map((program) => (
                       <div 
                         key={program.id}
-                        className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors"
+                        className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors cursor-pointer"
+                        onClick={() => {
+                          setSelectedProgram(program);
+                          setDetailDialogOpen(true);
+                        }}
                       >
                         <div className="flex items-center gap-3">
                           {program.is_completed ? (
@@ -431,7 +455,8 @@ export default function AthleteDashboard() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setSelectedProgram(program);
                                 setCompleteDialogOpen(true);
                               }}
@@ -453,10 +478,10 @@ export default function AthleteDashboard() {
               programs={programs || []}
               selectedAthleteId={athlete.id}
               onDayClick={(date, program) => {
-                // If clicking on an incomplete program, open complete dialog
-                if (program && !program.is_completed) {
+                // If clicking on a program, open detail dialog
+                if (program) {
                   setSelectedProgram(program);
-                  setCompleteDialogOpen(true);
+                  setDetailDialogOpen(true);
                 }
               }}
             />
@@ -492,6 +517,18 @@ export default function AthleteDashboard() {
         onOpenChange={setCompleteDialogOpen}
         onComplete={handleCompleteProgram}
         isSubmitting={isCompleting}
+      />
+
+      {/* Program Detail Dialog */}
+      <ProgramDetailDialog
+        program={selectedProgram}
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        onComplete={() => {
+          setDetailDialogOpen(false);
+          setCompleteDialogOpen(true);
+        }}
+        showCompleteButton={!selectedProgram?.is_completed}
       />
     </div>
   );
