@@ -219,6 +219,7 @@ export const useTrainingPrograms = (athleteId?: string | null) => {
     createProgram: createProgramMutation.mutate,
     updateProgram: updateProgramMutation.mutate,
     completeProgram: completeProgramMutation.mutate,
+    isCompleting: completeProgramMutation.isPending,
     deleteProgram: deleteProgramMutation.mutate,
   };
 };

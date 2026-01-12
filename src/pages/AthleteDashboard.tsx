@@ -16,7 +16,9 @@ import { ReadinessStatsCard } from "@/components/ReadinessStatsCard";
 import { ReadinessHistoryTable } from "@/components/ReadinessHistoryTable";
 import { FitnessFatigueFormChart } from "@/components/FitnessFatigueFormChart";
 import { AthleteReadinessForm } from "@/components/AthleteReadinessForm";
+import { CompleteProgramDialog } from "@/components/CompleteProgramDialog";
 import TrainingCalendar from "@/components/TrainingCalendar";
+import { TrainingProgram } from "@/hooks/useTrainingPrograms";
 import { 
   ArrowLeft, 
   Dumbbell, 
@@ -37,11 +39,22 @@ export default function AthleteDashboard() {
   const { user, signOut } = useAuth();
   const { data: athlete, isLoading: athleteLoading } = useLinkedAthlete();
   const { readinessData, isLoading: readinessLoading, createReadiness, isCreating } = useAthleteReadiness(athlete?.id);
-  const { programs, isLoading: programsLoading } = useTrainingPrograms(athlete?.id);
+  const { programs, isLoading: programsLoading, completeProgram, isCompleting } = useTrainingPrograms(athlete?.id);
   const { sessions, isLoading: sessionsLoading } = useTrainingSessions(athlete?.id);
   const { data: stats, isLoading: statsLoading } = useTrainingStats(athlete?.id);
   
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedProgram, setSelectedProgram] = useState<TrainingProgram | null>(null);
+  const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
+
+  const handleCompleteProgram = (data: { program_id: string; completed_rpe: number; completed_duration_minutes: number }) => {
+    completeProgram(data, {
+      onSuccess: () => {
+        setCompleteDialogOpen(false);
+        setSelectedProgram(null);
+      },
+    });
+  };
 
   // Calculate readiness stats for the chart
   const readinessStats = useMemo(() => {
@@ -335,12 +348,38 @@ export default function AthleteDashboard() {
                           )}
                           <span className="font-medium capitalize">{program.program_type}</span>
                         </div>
-                        <Badge variant={program.is_completed ? "default" : "secondary"}>
-                          {program.is_completed ? "Selesai" : "Belum Selesai"}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          {program.is_completed ? (
+                            <Badge variant="default">Selesai</Badge>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                setSelectedProgram(program);
+                                setCompleteDialogOpen(true);
+                              }}
+                            >
+                              <CheckCircle2 className="h-4 w-4 mr-1" />
+                              Selesaikan
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       {program.notes && (
                         <p className="mt-2 text-sm text-muted-foreground">{program.notes}</p>
+                      )}
+                      {program.program_exercises && program.program_exercises.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-current/10">
+                          <p className="text-xs text-muted-foreground mb-2">Latihan:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {program.program_exercises.map((ex, idx) => (
+                              <Badge key={idx} variant="outline" className="text-xs">
+                                {ex.exercise_name || ex.exercise_type}
+                                {ex.sets && ex.reps && ` (${ex.sets}x${ex.reps})`}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
                       )}
                     </div>
                   ))}
@@ -386,9 +425,20 @@ export default function AthleteDashboard() {
                           {program.completed_rpe && (
                             <Badge variant="outline">RPE: {program.completed_rpe}</Badge>
                           )}
-                          <Badge variant={program.is_completed ? "default" : "secondary"}>
-                            {program.is_completed ? "Selesai" : "Pending"}
-                          </Badge>
+                          {program.is_completed ? (
+                            <Badge variant="default">Selesai</Badge>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedProgram(program);
+                                setCompleteDialogOpen(true);
+                              }}
+                            >
+                              Selesaikan
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -403,8 +453,11 @@ export default function AthleteDashboard() {
               programs={programs || []}
               selectedAthleteId={athlete.id}
               onDayClick={(date, program) => {
-                // Just view mode for athletes
-                console.log("Selected date:", date, program);
+                // If clicking on an incomplete program, open complete dialog
+                if (program && !program.is_completed) {
+                  setSelectedProgram(program);
+                  setCompleteDialogOpen(true);
+                }
               }}
             />
           </TabsContent>
@@ -431,6 +484,15 @@ export default function AthleteDashboard() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Complete Program Dialog */}
+      <CompleteProgramDialog
+        program={selectedProgram}
+        open={completeDialogOpen}
+        onOpenChange={setCompleteDialogOpen}
+        onComplete={handleCompleteProgram}
+        isSubmitting={isCompleting}
+      />
     </div>
   );
 }
