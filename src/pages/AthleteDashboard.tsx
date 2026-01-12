@@ -15,6 +15,7 @@ import { TrainingStatsCards } from "@/components/TrainingStatsCards";
 import { ReadinessStatsCard } from "@/components/ReadinessStatsCard";
 import { ReadinessHistoryTable } from "@/components/ReadinessHistoryTable";
 import { FitnessFatigueFormChart } from "@/components/FitnessFatigueFormChart";
+import { AthleteReadinessForm } from "@/components/AthleteReadinessForm";
 import TrainingCalendar from "@/components/TrainingCalendar";
 import { 
   ArrowLeft, 
@@ -35,7 +36,7 @@ export default function AthleteDashboard() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { data: athlete, isLoading: athleteLoading } = useLinkedAthlete();
-  const { readinessData, isLoading: readinessLoading } = useAthleteReadiness(athlete?.id);
+  const { readinessData, isLoading: readinessLoading, createReadiness, isCreating } = useAthleteReadiness(athlete?.id);
   const { programs, isLoading: programsLoading } = useTrainingPrograms(athlete?.id);
   const { sessions, isLoading: sessionsLoading } = useTrainingSessions(athlete?.id);
   const { data: stats, isLoading: statsLoading } = useTrainingStats(athlete?.id);
@@ -409,6 +410,11 @@ export default function AthleteDashboard() {
           </TabsContent>
 
           <TabsContent value="readiness" className="mt-6 space-y-6">
+            <AthleteReadinessForm 
+              athleteId={athlete.id}
+              onSubmit={createReadiness}
+              isSubmitting={isCreating}
+            />
             <ReadinessStatsCard readinessData={readinessData || []} />
             <ReadinessHistoryTable 
               readinessData={readinessData || []} 
