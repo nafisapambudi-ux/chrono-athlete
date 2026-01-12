@@ -130,6 +130,7 @@ export function useAthleteReadiness(athleteId?: string) {
     readinessData,
     isLoading,
     createReadiness: createReadiness.mutate,
+    isCreating: createReadiness.isPending,
     deleteReadiness: deleteReadiness.mutate,
   };
 }
