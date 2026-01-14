@@ -3,7 +3,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RoleBadge } from "@/components/RoleBadge";
-import { BarChart3, Users, Dumbbell, Settings } from "lucide-react";
+import { BarChart3, Users, Dumbbell, Settings, ClipboardList } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
@@ -88,6 +88,23 @@ const Index = () => {
                 <CardContent>
                   <p className="text-muted-foreground">
                     Buat dan kelola program latihan untuk atlet.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Athlete Tests - Coaches only */}
+            {isCoach && (
+              <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate("/tests")}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ClipboardList className="h-6 w-6" />
+                    Tes & Pengukuran
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    Input dan lihat hasil tes bimotor atlet dengan norma berdasarkan usia dan gender.
                   </p>
                 </CardContent>
               </Card>

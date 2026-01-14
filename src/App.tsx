@@ -14,6 +14,7 @@ import TrainingSessions from "./pages/TrainingSessions";
 import AthleteComparison from "./pages/AthleteComparison";
 import AthleteDetail from "./pages/AthleteDetail";
 import AthleteDashboard from "./pages/AthleteDashboard";
+import AthleteTests from "./pages/AthleteTests";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,8 @@ export default function App() {
             <Route path="/comparison" element={<AthleteComparison />} />
             <Route path="/athlete/:athleteId" element={<AthleteDetail />} />
             <Route path="/my-training" element={<AthleteDashboard />} />
+            <Route path="/tests" element={<AthleteTests />} />
+            <Route path="/tests/:athleteId" element={<AthleteTests />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
