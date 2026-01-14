@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Link2, Link2Off, Loader2, User } from "lucide-react";
+import { Link2, Link2Off, Loader2, User, Mail } from "lucide-react";
 import type { Athlete } from "@/hooks/useAthletes";
 
 const emailSchema = z.string().trim().email({ message: "Format email tidak valid" });
@@ -27,6 +27,35 @@ interface LinkAthleteDialogProps {
 export function LinkAthleteDialog({ athlete, open, onOpenChange, onSuccess }: LinkAthleteDialogProps) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [linkedEmail, setLinkedEmail] = useState<string | null>(null);
+  const [loadingEmail, setLoadingEmail] = useState(false);
+
+  // Fetch linked user email when dialog opens and athlete is linked
+  useEffect(() => {
+    const fetchLinkedEmail = async () => {
+      if (!athlete?.linked_user_id || !open) {
+        setLinkedEmail(null);
+        return;
+      }
+
+      setLoadingEmail(true);
+      try {
+        const { data, error } = await supabase.rpc('get_user_email', {
+          user_id_param: athlete.linked_user_id
+        });
+
+        if (error) throw error;
+        setLinkedEmail(data);
+      } catch (error) {
+        console.error("Failed to fetch linked email:", error);
+        setLinkedEmail(null);
+      } finally {
+        setLoadingEmail(false);
+      }
+    };
+
+    fetchLinkedEmail();
+  }, [athlete?.linked_user_id, open]);
 
   const handleLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,10 +161,21 @@ export function LinkAthleteDialog({ athlete, open, onOpenChange, onSuccess }: Li
 
         {isLinked ? (
           <div className="space-y-4">
-            <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+            <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg space-y-2">
               <p className="text-sm text-green-600 dark:text-green-400">
                 Atlet ini sudah terhubung ke akun user.
               </p>
+              {loadingEmail ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>Memuat email...</span>
+                </div>
+              ) : linkedEmail ? (
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">{linkedEmail}</span>
+                </div>
+              ) : null}
             </div>
             <Button 
               variant="destructive" 
