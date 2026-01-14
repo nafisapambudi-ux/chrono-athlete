@@ -58,11 +58,63 @@ export type Database = {
           },
         ]
       }
+      athlete_tests: {
+        Row: {
+          athlete_id: string
+          body_weight_at_test: number | null
+          created_at: string
+          id: string
+          notes: string | null
+          result_unit: string
+          result_value: number
+          test_category: string
+          test_date: string
+          test_name: string
+          updated_at: string
+        }
+        Insert: {
+          athlete_id: string
+          body_weight_at_test?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          result_unit: string
+          result_value: number
+          test_category: string
+          test_date?: string
+          test_name: string
+          updated_at?: string
+        }
+        Update: {
+          athlete_id?: string
+          body_weight_at_test?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          result_unit?: string
+          result_value?: number
+          test_category?: string
+          test_date?: string
+          test_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "athlete_tests_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "athletes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       athletes: {
         Row: {
           avatar_url: string | null
+          birth_date: string | null
           body_height: number | null
           created_at: string
+          gender: string | null
           id: string
           linked_user_id: string | null
           mass: number | null
@@ -74,8 +126,10 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          birth_date?: string | null
           body_height?: number | null
           created_at?: string
+          gender?: string | null
           id?: string
           linked_user_id?: string | null
           mass?: number | null
@@ -87,8 +141,10 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          birth_date?: string | null
           body_height?: number | null
           created_at?: string
+          gender?: string | null
           id?: string
           linked_user_id?: string | null
           mass?: number | null
