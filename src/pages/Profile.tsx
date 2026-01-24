@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, ArrowUpDown, User, Pencil, BarChart3, Dumbbell, ArrowLeft, Trophy, Link2, Check, Eye } from "lucide-react";
+import { Loader2, Search, ArrowUpDown, User, Pencil, BarChart3, Dumbbell, ArrowLeft, Trophy, Link2, Check, Eye, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AthleteEditDialog } from "@/components/AthleteEditDialog";
 import { LinkAthleteDialog } from "@/components/LinkAthleteDialog";
@@ -31,6 +31,8 @@ const Profile = () => {
     mass: "",
     verticalJump: "",
     sportsBranch: "",
+    gender: "",
+    birthDate: "",
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -112,9 +114,11 @@ const Profile = () => {
       vertical_jump: athleteForm.verticalJump ? Number(athleteForm.verticalJump) : undefined,
       avatar_url: avatarUrl,
       sports_branch: athleteForm.sportsBranch || undefined,
+      gender: athleteForm.gender as "male" | "female" | undefined,
+      birth_date: athleteForm.birthDate || undefined,
     });
     
-    setAthleteForm({ name: "", bodyHeight: "", mass: "", verticalJump: "", sportsBranch: "" });
+    setAthleteForm({ name: "", bodyHeight: "", mass: "", verticalJump: "", sportsBranch: "", gender: "", birthDate: "" });
     setAvatarFile(null);
     setAvatarPreview(null);
     setIsUploading(false);
@@ -260,6 +264,36 @@ const Profile = () => {
                   value={athleteForm.sportsBranch}
                   onChange={(e) => setAthleteForm({ ...athleteForm, sportsBranch: e.target.value })}
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="gender">Jenis Kelamin</Label>
+                  <Select 
+                    value={athleteForm.gender} 
+                    onValueChange={(value) => setAthleteForm({ ...athleteForm, gender: value })}
+                  >
+                    <SelectTrigger id="gender">
+                      <SelectValue placeholder="Pilih jenis kelamin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Laki-laki</SelectItem>
+                      <SelectItem value="female">Perempuan</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="birthDate">Tanggal Lahir</Label>
+                  <div className="relative">
+                    <Input
+                      id="birthDate"
+                      type="date"
+                      value={athleteForm.birthDate}
+                      onChange={(e) => setAthleteForm({ ...athleteForm, birthDate: e.target.value })}
+                      className="pl-10"
+                    />
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
               </div>
               <Button type="submit" disabled={athletesLoading || isUploading}>
                 {(athletesLoading || isUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

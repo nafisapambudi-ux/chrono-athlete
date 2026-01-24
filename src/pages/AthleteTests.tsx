@@ -18,8 +18,11 @@ import {
 import { ArrowLeft, Plus, ClipboardList, User, Calendar } from "lucide-react";
 import { TestInputDialog } from "@/components/TestInputDialog";
 import { TestResultsCard } from "@/components/TestResultsCard";
+import { TestTrendChart } from "@/components/TestTrendChart";
+import { TestReportPDF } from "@/components/TestReportPDF";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { getAgeGroup, calculateAge } from "@/lib/testNorms";
 import type { Gender } from "@/lib/testNorms";
 
 const AthleteTests = () => {
@@ -69,6 +72,8 @@ const AthleteTests = () => {
   const athleteBirthDate = athleteDetails?.birth_date 
     ? new Date(athleteDetails.birth_date) 
     : null;
+  const age = athleteBirthDate ? calculateAge(athleteBirthDate) : null;
+  const ageGroup = age ? getAgeGroup(age) : "dewasa_muda";
 
   if (!user) {
     window.location.href = "/auth";
@@ -96,10 +101,23 @@ const AthleteTests = () => {
           </div>
 
           {isCoach && selectedAthleteId && (
-            <Button onClick={() => setTestDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Input Tes Baru
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <TestReportPDF
+                athleteName={selectedAthlete?.name || "Atlet"}
+                athleteGender={athleteGender}
+                athleteBirthDate={athleteBirthDate}
+                athleteMass={selectedAthlete?.mass || null}
+                athleteHeight={selectedAthlete?.body_height || null}
+                sportsBranch={selectedAthlete?.sports_branch || null}
+                tests={tests}
+                testsByCategory={testsByCategory}
+                latestTests={latestTests}
+              />
+              <Button onClick={() => setTestDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Input Tes Baru
+              </Button>
+            </div>
           )}
         </header>
 
@@ -174,6 +192,17 @@ const AthleteTests = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Test Trend Chart */}
+        {selectedAthleteId && tests.length > 0 && (
+          <TestTrendChart
+            tests={tests}
+            testsByCategory={testsByCategory}
+            athleteGender={athleteGender}
+            ageGroup={ageGroup}
+            athleteMass={selectedAthlete?.mass || null}
+          />
+        )}
 
         {/* Test Results */}
         {selectedAthleteId && (
