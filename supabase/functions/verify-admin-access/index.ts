@@ -1,12 +1,39 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { timingSafeEqual } from "https://deno.land/std@0.168.0/crypto/timing_safe_equal.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Allowed origins for CORS
+const ALLOWED_ORIGINS = [
+  'https://hirocross-athlete.lovable.app',
+  'https://id-preview--5f17aae3-63c5-400c-88ed-0a217b5a0c09.lovable.app',
+];
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) 
+    ? origin 
+    : ALLOWED_ORIGINS[0];
+  
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Credentials': 'true',
+  };
+}
+
+// Constant-time string comparison to prevent timing attacks
+function secureCompare(a: string, b: string): boolean {
+  const encoder = new TextEncoder();
+  // Pad to same length to prevent length-based timing attacks
+  const maxLen = Math.max(a.length, b.length, 64);
+  const aBuffer = encoder.encode(a.padEnd(maxLen, '\0'));
+  const bBuffer = encoder.encode(b.padEnd(maxLen, '\0'));
+  return timingSafeEqual(aBuffer, bBuffer);
+}
 
 serve(async (req) => {
+  const origin = req.headers.get('Origin');
+  const corsHeaders = getCorsHeaders(origin);
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -66,8 +93,8 @@ serve(async (req) => {
       );
     }
 
-    // Verify admin access code
-    const codeValid = code === adminAccessCode;
+    // Verify admin access code using constant-time comparison
+    const codeValid = secureCompare(code, adminAccessCode);
     
     if (!codeValid) {
       console.log(`Invalid access code attempt for user ${user.id}`);
@@ -121,7 +148,7 @@ serve(async (req) => {
     console.error('Unexpected error:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...getCorsHeaders(null), 'Content-Type': 'application/json' } }
     );
   }
 });
