@@ -49,6 +49,15 @@ export const athleteSchema = z.object({
     .max(100, { message: "Cabang olahraga maksimal 100 karakter" })
     .optional()
     .nullable(),
+  gender: z
+    .enum(["male", "female"], { message: "Gender tidak valid" })
+    .optional()
+    .nullable(),
+  birth_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Format tanggal lahir tidak valid (YYYY-MM-DD)" })
+    .optional()
+    .nullable(),
 });
 
 // Training session validation

@@ -8,7 +8,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Camera } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { User, Camera, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,6 +29,8 @@ interface Athlete {
   vertical_jump: number | null;
   avatar_url: string | null;
   sports_branch: string | null;
+  gender: string | null;
+  birth_date: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -41,6 +50,8 @@ export function AthleteEditDialog({ athlete, open, onOpenChange, onUpdate }: Ath
     body_height: "",
     vertical_jump: "",
     sports_branch: "",
+    gender: "",
+    birth_date: "",
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -54,6 +65,8 @@ export function AthleteEditDialog({ athlete, open, onOpenChange, onUpdate }: Ath
         body_height: athlete.body_height?.toString() || "",
         vertical_jump: athlete.vertical_jump?.toString() || "",
         sports_branch: athlete.sports_branch || "",
+        gender: athlete.gender || "",
+        birth_date: athlete.birth_date || "",
       });
       setAvatarPreview(athlete.avatar_url);
       setAvatarFile(null);
@@ -111,6 +124,8 @@ export function AthleteEditDialog({ athlete, open, onOpenChange, onUpdate }: Ath
         vertical_jump: form.vertical_jump ? Number(form.vertical_jump) : null,
         avatar_url: avatarUrl,
         sports_branch: form.sports_branch || null,
+        gender: form.gender || null,
+        birth_date: form.birth_date || null,
       });
 
       onOpenChange(false);
@@ -179,6 +194,37 @@ export function AthleteEditDialog({ athlete, open, onOpenChange, onUpdate }: Ath
               value={form.sports_branch}
               onChange={(e) => setForm({ ...form, sports_branch: e.target.value })}
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="edit-gender">Jenis Kelamin</Label>
+              <Select 
+                value={form.gender} 
+                onValueChange={(value) => setForm({ ...form, gender: value })}
+              >
+                <SelectTrigger id="edit-gender">
+                  <SelectValue placeholder="Pilih jenis kelamin" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">Laki-laki</SelectItem>
+                  <SelectItem value="female">Perempuan</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="edit-birth-date">Tanggal Lahir</Label>
+              <div className="relative">
+                <Input
+                  id="edit-birth-date"
+                  type="date"
+                  value={form.birth_date}
+                  onChange={(e) => setForm({ ...form, birth_date: e.target.value })}
+                  className="pl-10"
+                />
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
